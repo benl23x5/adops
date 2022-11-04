@@ -1,0 +1,25 @@
+
+name:           adops
+version:        1.0.0.0
+license:        PublicDomain
+cabal-version:  >= 1.6
+build-type:     Simple
+
+executable adops
+ hs-source-dirs: src
+ build-depends: base, containers, vector
+ main-is:       Main.hs
+ other-modules:
+        Adops
+        Adops.Shape
+        Adops.Elem
+        Adops.Array
+
+ ghc-options:
+
+ extensions:
+        PatternGuards
+        PatternSynonyms
+        TypeFamilies
+        FlexibleContexts
+
