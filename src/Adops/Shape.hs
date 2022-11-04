@@ -1,4 +1,4 @@
-
+{-# OPTIONS -fno-warn-missing-methods #-}
 module Adops.Shape where
 
 -------------------------------------------------------------------------------
@@ -112,6 +112,11 @@ instance Flatten Shape1 where
   = Shape1 sh1_0
 
 
+instance Num Shape1 where
+ (+) (Shape1 a0) (Shape1 b0)
+  = Shape1 (a0 + b0)
+
+
 -------------------------------------------------------------------------------
 data Shape2
  = Shape2 Int Int
@@ -138,23 +143,32 @@ instance IsShape Shape2 where
         i1 = lix `div` p0
         i0 = lix `mod` p0
 
+
 instance HasStrides Shape2 where
  type Strides Shape2 = Shape2
  strides (Shape2 _ i0)
   = Shape2 i0 1
 
+
 instance Dim1 Shape2 where
  inner0 (Shape2 _ i0)  = i0
  outer0 (Shape2 o0 _)  = o0
+
 
 instance Dim2 Shape2 where
  inner1 (Shape2 i1 _)  = i1
  outer1 (Shape2 _ o1)  = o1
 
+
 instance Flatten Shape2 where
  type Flat Shape2 = Shape1
  flatten (Shape2 sh2_0 sh2_1)
   = Shape1 (sh2_0 * sh2_1)
+
+
+instance Num Shape2 where
+ (+) (Shape2 a0 a1) (Shape2 b0 b1)
+  = Shape2 (a0 + b0) (a1 + b1)
 
 
 -------------------------------------------------------------------------------
@@ -195,22 +209,31 @@ instance HasStrides Shape3 where
  strides (Shape3 _ i1 i0)
   = Shape3 (i1 * i0) i0 1
 
+
 instance Dim1 Shape3 where
  inner0 (Shape3 _ _ i0) = i0
  outer0 (Shape3 o0 _ _) = o0
+
 
 instance Dim2 Shape3 where
  inner1 (Shape3 _ i1 _) = i1
  outer1 (Shape3 _ o1 _) = o1
 
+
 instance Dim3 Shape3 where
  inner2 (Shape3 i2 _ _) = i2
  outer2 (Shape3 _ _ o2) = o2
+
 
 instance Flatten Shape3 where
  type Flat Shape3 = Shape1
  flatten (Shape3 sh3_0 sh3_1 sh3_2)
   = Shape1 (sh3_0 * sh3_1 * sh3_2)
+
+
+instance Num Shape3 where
+ (+) (Shape3 a0 a1 a2) (Shape3 b0 b1 b2)
+  = Shape3 (a0 + b0) (a1 + b1) (a2 + b2)
 
 
 -------------------------------------------------------------------------------
@@ -259,24 +282,34 @@ instance HasStrides Shape4 where
  strides (Shape4 _ i2 i1 i0)
   = Shape4 (i2 * i1 * i0) (i1 * i0) i0 1
 
+
 instance Dim1 Shape4 where
  inner0 (Shape4 _ _ _ i0) = i0
  outer0 (Shape4 o0 _ _ _) = o0
+
 
 instance Dim2 Shape4 where
  inner1 (Shape4 _ _ i1 _) = i1
  outer1 (Shape4 _ o1 _ _) = o1
 
+
 instance Dim3 Shape4 where
  inner2 (Shape4 _ i2 _ _) = i2
  outer2 (Shape4 _ _ o2 _) = o2
+
 
 instance Dim4 Shape4 where
  inner3 (Shape4 i3 _ _ _) = i3
  outer3 (Shape4 _ _ _ o3) = o3
 
+
 instance Flatten Shape4 where
  type Flat Shape4 = Shape1
  flatten (Shape4 i h r c)
   = Shape1 (i * h * r * c)
+
+
+instance Num Shape4 where
+ (+) (Shape4 a0 a1 a2 a3) (Shape4 b0 b1 b2 b3)
+  = Shape4 (a0 + b0) (a1 + b1) (a2 + b2) (a3 + b3)
 
