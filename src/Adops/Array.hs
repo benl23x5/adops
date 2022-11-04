@@ -4,6 +4,7 @@ import Adops.Shape
 import Adops.Elem
 import qualified Data.Vector.Unboxed    as U
 
+
 ------------------------------------------------------------------------------
 data Array sh a
  = Array sh (U.Vector a)
@@ -45,6 +46,15 @@ floats = fill
 
 
 ------------------------------------------------------------------------------
+build1  :: Elem a
+        => Shape1 -> (Index1 -> a) -> Array1 a
+build1 sh make
+ = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+
+build1f :: Shape1 -> (Index1 -> Float) -> Array1 Float
+build1f = build1
+
+
 build4  :: Elem a
         => Shape4 -> (Index4 -> a) -> Array4 a
 build4 sh make
@@ -82,12 +92,22 @@ slicez4 :: Elem a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
 
+
+------------------------------------------------------------------------------
+sumAll  :: (Elem a, Num a)
+        => Array sh a -> a
+sumAll (Array _ elems)
+ = U.sum elems
+
+
 ------------------------------------------------------------------------------
 dot     :: (Elem a, Num a)
         => Array sh a -> Array sh a -> a
 dot (Array sh1 elems1) (Array sh2 elems2)
  = U.sum $ U.zipWith (*) elems1 elems2
 
+
+------------------------------------------------------------------------------
 same    :: Eq a => a -> a -> a
 same x1 x2
  | x1 == x2     = x1
@@ -137,4 +157,25 @@ conv2d_pad (nPh, nPw) arrA arrK
                 arrKt = slicez4 arrK (Index4 iCout 0 0   0)   shK1
             in  dot arrAt arrKt
 
+
+------------------------------------------------------------------------------
+-- Disparity cost volume.
+costVolumeLR
+        :: (Elem a, Num a)
+        => Int -> Int -> Array4 a -> Array4 a -> Array4 a
+
+costVolumeLR iStart count arrL arrR
+ = check (shape arrL == shape arrR)
+ $ let  (Shape4 nImgs nChas nRows nCols) = shape arrL
+        shOut = Shape4 nImgs count nRows nCols
+
+   in   build4 shOut $ \(Index4 iImg iDisp iRow iCol) ->
+        let arrVecL = build1 (Shape1 nChas) $ \(Index1 iCha) ->
+                        index4  arrL (Index4 iImg iCha iRow iCol)
+
+            iSrc = iCol - iStart - iDisp
+            arrVecR = build1 (Shape1 nChas) $ \(Index1 iCha) ->
+                        indexz4 arrR (Index4 iImg iCha iRow iSrc)
+
+        in sumAll (abs (arrVecL - arrVecR))
 
