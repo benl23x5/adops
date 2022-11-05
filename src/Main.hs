@@ -1,5 +1,4 @@
 
-import Adops.Shape
 import Adops.Array
 
 main :: IO ()

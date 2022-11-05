@@ -11,9 +11,10 @@ executable adops
  main-is:       Main.hs
  other-modules:
         Adops
-        Adops.Shape
-        Adops.Elem
         Adops.Array
+        Adops.Array.Elem
+        Adops.Array.Shape
+        Adops.Op.Conv
 
  ghc-options:
 

@@ -1,4 +1,4 @@
 
 module Adops where
-import Adops.Shape
 import Adops.Array
+import Adops.Op.Conv

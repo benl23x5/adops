@@ -1,5 +1,5 @@
 {-# OPTIONS -fno-warn-missing-methods #-}
-module Adops.Shape where
+module Adops.Array.Shape where
 
 -------------------------------------------------------------------------------
 -- | A shape object, which describes a range of indexable elements.

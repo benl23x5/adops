@@ -1,6 +1,6 @@
 
-module Adops.Elem where
-import Adops.Shape
+module Adops.Array.Elem where
+import Adops.Array.Shape
 import qualified Data.Vector.Unboxed    as U
 
 
