@@ -4,8 +4,10 @@ import Adops.Array
 
 -- | Unpadded full convolution,
 --   where the output size is the same as the input size.
-conv2d  :: (Elem a, Num a)
+conv2d
+ :: (Elem a, Num a)
  => Array4 a -> Array4 a -> Array4 a
+
 conv2d arrA arrK
  = let  (Shape4 nImgs  nCinpA nAh nAw) = shape arrA
         (Shape4 nCoutK nCinpK nKh nKw) = shape arrK

@@ -154,25 +154,3 @@ check   :: Bool -> a -> a
 check True x = x
 check False x = error "check failed"
 
-
-------------------------------------------------------------------------------
--- Disparity cost volume.
-costVolumeLR
-        :: (Elem a, Num a)
-        => Int -> Int -> Array4 a -> Array4 a -> Array4 a
-
-costVolumeLR iStart count arrL arrR
- = check (shape arrL == shape arrR)
- $ let  (Shape4 nImgs nChas nRows nCols) = shape arrL
-        shOut = Shape4 nImgs count nRows nCols
-
-   in   build4 shOut $ \(Index4 iImg iDisp iRow iCol) ->
-        let arrVecL = build1 (Shape1 nChas) $ \(Index1 iCha) ->
-                        index4  arrL (Index4 iImg iCha iRow iCol)
-
-            iSrc = iCol - iStart - iDisp
-            arrVecR = build1 (Shape1 nChas) $ \(Index1 iCha) ->
-                        indexz4 arrR (Index4 iImg iCha iRow iSrc)
-
-        in sumAll (abs (arrVecL - arrVecR))
-
