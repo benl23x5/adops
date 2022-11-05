@@ -9,8 +9,8 @@ conv2d
  => Array4 a -> Array4 a -> Array4 a
 
 conv2d arrA arrK
- = let  (Shape4 nImgs  nCinpA nAh nAw) = shape arrA
-        (Shape4 nCoutK nCinpK nKh nKw) = shape arrK
+ = let  Shape4 nImgs  nCinpA nAh nAw = shape arrA
+        Shape4 nCoutK nCinpK nKh nKw = shape arrK
         nCinp   = same nCinpA nCinpK
         shB     = Shape4 nImgs nCoutK nAh nAw
         shK1    = Shape4 1 nCinp nKh nKw
@@ -27,8 +27,8 @@ conv2d_pad
  => (Int, Int) -> Array4 a -> Array4 a -> Array4 a
 
 conv2d_pad (nPh, nPw) arrA arrK
- = let  (Shape4 nImgs  nCinpA nAh nAw) = shape arrA
-        (Shape4 nCoutK nCinpK nKh nKw) = shape arrK
+ = let  Shape4 nImgs  nCinpA nAh nAw = shape arrA
+        Shape4 nCoutK nCinpK nKh nKw = shape arrK
         nCinp   = same nCinpA nCinpK
         nBh     = nAh + 2 * nPh - nKh + 1
         nBw     = nAw + 2 * nPw - nKw + 1

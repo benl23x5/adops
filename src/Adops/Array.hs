@@ -6,10 +6,11 @@ module Adops.Array
         , Array1, Array2, Array3, Array4
         , IsShape(..)
         , fill, floats
-        , build1, build4
+        , build1, build2, build3, build4
         , index4, indexz4
         , slicez4
         , zipWith4
+        , mapAll
         , sumAll
         , dot
         , same, check)
@@ -75,6 +76,28 @@ build1f :: Shape1 -> (Index1 -> Float) -> Array1 Float
 build1f = build1
 
 
+-- | Build an array of the given rank-2 shape,
+--   given an function to produce the element at each index.
+build2 :: Elem a => Shape2 -> (Index2 -> a) -> Array2 a
+build2 sh make
+ = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+
+-- | Alias for `build2` that constrains the element type to be `Float`.
+build2f :: Shape2 -> (Index2 -> Float) -> Array2 Float
+build2f = build2
+
+
+-- | Build an array of the given rank-3 shape,
+--   given an function to produce the element at each index.
+build3 :: Elem a => Shape3 -> (Index3 -> a) -> Array3 a
+build3 sh make
+ = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+
+-- | Alias for `build3` that constrains the element type to be `Float`.
+build3f :: Shape3 -> (Index3 -> Float) -> Array3 Float
+build3f = build3
+
+
 -- | Build an array of the given rank-1 shape,
 --   given an function to produce the element at each index.
 build4  :: Elem a => Shape4 -> (Index4 -> a) -> Array4 a
@@ -112,6 +135,12 @@ slicez4 :: Elem a
         => Array4 a -> Index4 -> Shape4 -> Array4 a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
+
+
+------------------------------------------------------------------------------
+-- | Apply a function to every element of an array.
+mapAll :: (Elem a, Elem b) => (a -> b) -> Array sh a -> Array sh b
+mapAll f (Array sh elts) = Array sh $ U.map f elts
 
 
 ------------------------------------------------------------------------------

@@ -15,6 +15,9 @@ executable adops
         Adops.Array.Elem
         Adops.Array.Shape
         Adops.Op.Conv
+        Adops.Op.Disparity
+        Adops.Op.Norm
+
 
  ghc-options:
 

@@ -1,6 +1,7 @@
 
 module Adops.Op.Disparity where
 import Adops.Array
+import Adops.Op.Norm
 
 -- | Disparity cost volume.
 --
@@ -18,12 +19,12 @@ import Adops.Array
 --    Section III b).
 --
 costVolume
-        :: (Elem a, Num a)
-        => Int -> Int -> Array4 a -> Array4 a -> Array4 a
+ :: (Elem a, Num a)
+ => Int -> Int -> Array4 a -> Array4 a -> Array4 a
 
 costVolume iStart count arrL arrR
  = check (shape arrL == shape arrR)
- $ let  (Shape4 nImgs nChas nRows nCols) = shape arrL
+ $ let  Shape4 nImgs nChas nRows nCols = shape arrL
         shOut = Shape4 nImgs count nRows nCols
 
    in   build4 shOut $ \(Index4 iImg iDisp iRow iCol) ->
@@ -35,4 +36,41 @@ costVolume iStart count arrL arrR
                         indexz4 arrR (Index4 iImg iCha iRow iSrc)
 
         in sumAll (abs (arrVecL - arrVecR))
+
+
+-- | Disparity regression.
+--
+--   Disparity regression is a reduction operator along the inner-most
+--   dimension, that applies the following computation to each inner vector.
+--
+--   {{{
+--   regression C = Σ k=0,M.  k *      exp (-C_ijk)
+--                                -----------------------
+--                                Σ k'=0,M. exp(-C_ijk')
+--   }}}
+--
+--   Noticing that the right hand side is the same as the softmax
+--   operator applied along the channels axis of the array, we have:
+--   {{{
+--   regression C = [ i j → sum [ k → k * (softmax (negate C[i,j,*]))[k] ] ]
+--   }}}
+--
+--   Described in:
+--    Anytime Stereo Image Depth Estimation on Mobile Devices
+--    Wang, Lai et al, ICRA 2019
+--    https://arxiv.org/abs/1810.11408
+--    Section III b).
+--
+regression :: Array4 Float -> Array3 Float
+regression arr
+ = let  Shape4 nImgs nChas nRows nCols = shape arr
+        aKs   = build1 (Shape1 nChas) $ \(Index1 iCha) ->
+                  fromIntegral iCha
+        shOut = Shape3 nImgs nRows nCols
+
+   in   build3 shOut $ \(Index3 iImg iRow iCol) ->
+        let aVec = build1 (Shape1 nChas) $ \(Index1 iCha) ->
+                     index4 arr (Index4 iImg iCha iRow iCol)
+            aNeg = mapAll (\x -> x * (-1)) aVec
+        in  sumAll (aKs * softmax aNeg)
 
