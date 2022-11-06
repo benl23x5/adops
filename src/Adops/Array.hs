@@ -7,6 +7,7 @@ module Adops.Array
         , IsShape(..)
         , fill, floats
         , build1, build2, build3, build4
+        , index3, indexz3
         , index4, indexz4
         , slicez4
         , zipWith4
@@ -110,6 +111,25 @@ build4f = build4
 
 
 ------------------------------------------------------------------------------
+-- | Retrieve the element at the given index,
+--   throwing error on out of range indices.
+index3  :: Elem a => Array3 a -> Index3 -> a
+index3 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise
+ = error $ unlines
+ [ "index3: out of range"
+ , "  index = " ++ show ix
+ , "  shape = " ++ show sh ]
+
+-- | Retrieve the element at the given index,
+--   returning zero for out of range indices.
+indexz3 :: Elem a => Array3 a -> Index3 -> a
+indexz3 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise    = zero
+
+
 -- | Retrieve the element at the given index,
 --   throwing error on out of range indices.
 index4  :: Elem a => Array4 a -> Index4 -> a

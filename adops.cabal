@@ -7,17 +7,24 @@ build-type:     Simple
 
 executable adops
  hs-source-dirs: src
- build-depends: base, containers, vector
+ build-depends:
+        base, bytestring, vector, bmp
+
  main-is:       Main.hs
+
  other-modules:
         Adops
         Adops.Array
         Adops.Array.Elem
         Adops.Array.Shape
+
         Adops.Op.Conv
         Adops.Op.Disparity
         Adops.Op.Norm
 
+        Adops.Codec
+
+        Demo.Stereo
 
  ghc-options:
 
