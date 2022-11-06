@@ -27,6 +27,7 @@ executable adops
         Demo.Stereo
 
  ghc-options:
+        -O2
 
  extensions:
         PatternGuards

@@ -6,6 +6,7 @@ module Adops.Array
         , Array1, Array2, Array3, Array4
         , IsShape(..)
         , reshape
+        , (+.), (-.), (*.), aabs
         , fill, floats
         , build1, build2, build3, build4
         , index2
@@ -53,16 +54,32 @@ reshape sh2 arr@(Array _ elts)
 
 
 ------------------------------------------------------------------------------
-instance (IsShape sh, U.Unbox a, Num a) => Num (Array sh a) where
- (+) (Array sh1 elems1) (Array sh2 elems2)
-  | sh1 == sh2
-  = Array sh1 (U.zipWith (+) elems1 elems2)
-  | otherwise   = error "shape mismatch"
+(+.) :: (IsShape sh, U.Unbox a, Num a)
+     => Array sh a -> Array sh a -> Array sh a
+(+.) (Array sh1 elems1) (Array sh2 elems2)
+ | sh1 == sh2
+ = Array sh1 (U.zipWith (+) elems1 elems2)
+ | otherwise   = error "shape mismatch"
 
- (*) (Array sh1 elems1) (Array sh2 elems2)
-  | sh1 == sh2
-  = Array sh1 (U.zipWith (*) elems1 elems2)
-  | otherwise   = error "shape mismatch"
+
+(-.) :: (IsShape sh, U.Unbox a, Num a)
+     => Array sh a -> Array sh a -> Array sh a
+(-.) (Array sh1 elems1) (Array sh2 elems2)
+ | sh1 == sh2
+ = Array sh1 (U.zipWith (-) elems1 elems2)
+ | otherwise   = error "shape mismatch"
+
+
+(*.) :: (IsShape sh, U.Unbox a, Num a)
+     => Array sh a -> Array sh a -> Array sh a
+(*.) (Array sh1 elems1) (Array sh2 elems2)
+ | sh1 == sh2
+ = Array sh1 (U.zipWith (*) elems1 elems2)
+ | otherwise   = error "shape mismatch"
+
+aabs :: (U.Unbox a, Num a) => Array sh a -> Array sh a
+aabs (Array sh elems)
+ = Array sh $ U.map abs elems
 
 
 ------------------------------------------------------------------------------

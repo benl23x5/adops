@@ -92,3 +92,16 @@ renderTurbo arr
                   | iCha == 1 = dot v kGreen
                   | iCha == 2 = dot v kBlue
          in     c
+
+
+renderGrey :: Array2 Float -> Array3 Float
+renderGrey arr
+ = let  Shape2 nRows nCols = shape arr
+
+        clamp x
+         | x <= 0    = 0
+         | x >= 1    = 1
+         | otherwise = x
+
+   in   build3 (Shape3 3 nRows nCols) $ \(Index3 iCha iRow iCol) ->
+         clamp $ index2 arr $ Index2 iRow iCol

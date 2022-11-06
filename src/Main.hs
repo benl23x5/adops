@@ -7,10 +7,10 @@ main :: IO ()
 main
  = do   args <- S.getArgs
         case args of
-         ["stereo", pathBmpLeft, pathBmpRight, pathBmpOut]
-          -> Demo.Stereo.runStereo pathBmpLeft pathBmpRight pathBmpOut
+         ["stereo", pathBmpLeft, pathBmpRight, dirOut]
+          -> Demo.Stereo.runStereo pathBmpLeft pathBmpRight dirOut
 
          _ -> putStrLn $ unlines
-                [ "usage: adops stereo <LEFT.bmp> <RIGHT.bmp> <OUT.bmp>"]
+                [ "usage: adops stereo <LEFT.bmp> <RIGHT.bmp> <DIR_OUT>"]
 
 

@@ -35,7 +35,7 @@ costVolume iStart count arrL arrR
             arrVecR = build1 (Shape1 nChas) $ \(Index1 iCha) ->
                         indexz4 arrR (Index4 iImg iCha iRow iSrc)
 
-        in sumAll (abs (arrVecL - arrVecR))
+        in sumAll (aabs (arrVecL -. arrVecR))
 
 
 -- | Disparity regression.
@@ -72,5 +72,5 @@ regression arr
         let aVec = build1 (Shape1 nChas) $ \(Index1 iCha) ->
                      index4 arr (Index4 iImg iCha iRow iCol)
             aNeg = mapAll (\x -> x * (-1)) aVec
-        in  sumAll (aKs * softmax aNeg)
+        in  sumAll (aKs *. softmax aNeg)
 
