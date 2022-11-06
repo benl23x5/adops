@@ -24,6 +24,7 @@ executable adops
 
         Adops.Codec
 
+        Demo.Sobel
         Demo.Stereo
 
  ghc-options:
