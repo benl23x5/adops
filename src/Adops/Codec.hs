@@ -48,3 +48,47 @@ writeBMP filePath arr
         let (bsRGBA, _) = BS.unfoldrN elemsRGBA make 0
         let bmp = BMP.packRGBA32ToBMP32 width height bsRGBA
         BMP.writeBMP filePath bmp
+
+
+-- | Render single channel data using the Google Turbo Color map.
+--
+--   Based on:
+--    https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
+--    https://gist.github.com/mikhailov-work/ee72ba4191942acecc03fe6da94fc73f
+--    https://gist.github.com/mikhailov-work/0d177465a8151eb6ede1768d51d476c7
+--
+--   Authors:
+--     Colormap Design: Anton Mikhailov (mikhailov@google.com)
+--     GLSL Approximation: Ruofei Du (ruofei@google.com)
+--
+renderTurbo :: Array2 Float -> Array3 Float
+renderTurbo arr
+ = let
+        kRed   = (0.13572138,  4.61539260, -42.66032258, 132.13108234, -152.94239396, 59.28637943)
+        kBlue  = (0.10667330, 12.64194608, -60.58204836, 110.36276771,  -89.90310912, 27.34824973)
+        kGreen = (0.09140261,  2.19418839,   4.84296658, -14.18503333,    4.27729857,  2.82956604)
+
+        clamp x
+         | x <= 0    = 0
+         | x >= 1    = 1
+         | otherwise = x
+
+        dot (a0, a1, a2, a3, a4, a5) (b0, b1, b2, b3, b4, b5)
+         = a0 * b0 + a1 * b1 + a2 * b2 + a3 * b3 + a4 * b4 + a5 * b5
+
+        vec x
+         = let  x1 = clamp x
+                x2 = x1 * x1
+                x3 = x2 * x1
+                x4 = x3 * x1
+                x5 = x4 * x1
+            in  (1.0, x1, x2, x3, x4, x5)
+
+        Shape2 nRows nCols = shape arr
+
+   in   build3 (Shape3 3 nRows nCols) $ \(Index3 iCha iRow iCol) ->
+         let    v = vec $ index2 arr $ Index2 iRow iCol
+                c | iCha == 0 = dot v kRed
+                  | iCha == 1 = dot v kGreen
+                  | iCha == 2 = dot v kBlue
+         in     c

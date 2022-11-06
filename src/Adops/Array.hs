@@ -5,11 +5,13 @@ module Adops.Array
         , Array(..)
         , Array1, Array2, Array3, Array4
         , IsShape(..)
+        , reshape
         , fill, floats
         , build1, build2, build3, build4
+        , index2
         , index3, indexz3
         , index4, indexz4
-        , slicez4
+        , slicez3, slicez4
         , zipWith4
         , mapAll
         , sumAll
@@ -36,6 +38,18 @@ instance IsShape sh => HasShape (Array sh a) where
  type Shape (Array sh a) = sh
  shape  (Array sh _) = sh
  extent (Array sh a) = size sh
+
+
+-- | Apply a new shape to the elements of an array.
+--   The new shape must represent the same number of elements as the old one.
+reshape
+ :: (IsShape sh1, IsShape sh2)
+ => sh2 -> Array sh1 a -> Array sh2 a
+reshape sh2 arr@(Array _ elts)
+ | not $ size (shape arr) == size sh2
+ = error "shape mismatch"
+
+ | otherwise = Array sh2 elts
 
 
 ------------------------------------------------------------------------------
@@ -113,6 +127,17 @@ build4f = build4
 ------------------------------------------------------------------------------
 -- | Retrieve the element at the given index,
 --   throwing error on out of range indices.
+index2  :: Elem a => Array2 a -> Index2 -> a
+index2 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise
+ = error $ unlines
+ [ "index2: out of range"
+ , "  index = " ++ show ix
+ , "  shape = " ++ show sh ]
+
+-- | Retrieve the element at the given index,
+--   throwing error on out of range indices.
 index3  :: Elem a => Array3 a -> Index3 -> a
 index3 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
@@ -146,13 +171,22 @@ indexz4 (Array sh elems) ix
 
 
 ------------------------------------------------------------------------------
+-- | Slice a section out of a rank-3 array,
+--   given a base offset and shape of the section.
+--
+--   If the slice extends out side the source array then the corresponding
+--   elements are set to zero.
+slicez3 :: Elem a => Array3 a -> Index3 -> Shape3 -> Array3 a
+slicez3 arr ixBase shResult
+ = build3 shResult $ \ixResult -> indexz3 arr (ixBase + ixResult)
+
+
 -- | Slice a section out of a rank-4 array,
 --   given a base offset and shape of the section.
 --
 --   If the slice extends out side the source array then the corresponding
 --   elements are set to zero.
-slicez4 :: Elem a
-        => Array4 a -> Index4 -> Shape4 -> Array4 a
+slicez4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
 
