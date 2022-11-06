@@ -7,8 +7,9 @@ module Adops.Array
         , IsShape(..)
         , reshape
         , (+.), (-.), (*.), aabs
-        , fill, floats
+        , fill, floats, fromList
         , build1, build2, build3, build4
+        , packChas3, packChas4
         , index2
         , index3, indexz3
         , index4, indexz4
@@ -94,6 +95,10 @@ fill sh x
 floats :: IsShape sh => sh -> Float -> Array sh Float
 floats = fill
 
+fromList :: (IsShape sh, U.Unbox a)
+         => sh -> [a] -> Array sh a
+fromList sh elts
+ = Array sh (U.fromList elts)
 
 
 ------------------------------------------------------------------------------
@@ -140,6 +145,23 @@ build4 sh make
 build4f :: Shape4 -> (Index4 -> Float) -> Array4 Float
 build4f = build4
 
+
+------------------------------------------------------------------------------
+packChas3 :: Shape3 -> [Array2 Float] -> Array3 Float
+packChas3 sh xs
+ = let Shape3 nImgs _ _ = sh
+   in  check (nImgs == length xs)
+        $ build3 sh $ \(Index3 iCha iRow iCol) ->
+           let a = xs !! iCha
+           in  index2 a (Index2 iRow iCol)
+
+packChas4 :: Shape4 -> [Array3 Float] -> Array4 Float
+packChas4 sh xs
+ = let Shape4 nImgs _ _ _ = sh
+   in  check (nImgs == length xs)
+        $ build4 sh $ \(Index4 iImg iCha iRow iCol) ->
+           let a = xs !! iImg
+           in  index3 a (Index3 iCha iRow iCol)
 
 ------------------------------------------------------------------------------
 -- | Retrieve the element at the given index,

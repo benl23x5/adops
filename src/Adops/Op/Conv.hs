@@ -8,7 +8,7 @@ conv2d
  :: (Elem a, Num a)
  => Array4 a -> Array4 a -> Array4 a
 
-conv2d arrA arrK
+conv2d arrK arrA
  = let  Shape4 nImgs  nCinpA nAh nAw = shape arrA
         Shape4 nCoutK nCinpK nKh nKw = shape arrK
         nCinp   = same nCinpA nCinpK
@@ -26,7 +26,7 @@ conv2d_pad
  :: (Elem a, Num a)
  => (Int, Int) -> Array4 a -> Array4 a -> Array4 a
 
-conv2d_pad (nPh, nPw) arrA arrK
+conv2d_pad (nPh, nPw) arrK arrA
  = let  Shape4 nImgs  nCinpA nAh nAw = shape arrA
         Shape4 nCoutK nCinpK nKh nKw = shape arrK
         nCinp   = same nCinpA nCinpK
