@@ -41,3 +41,22 @@ conv2d_pad (nPh, nPw) arrK arrA
             arrKt = slicez4 arrK (Index4 iCout 0 0   0)   shK1
         in  dot arrAt arrKt
 
+--------------------------------------------------------------------------------
+-- | Derivative of unpadded full convolution with respect to the input image.
+--
+conv2d_dInp
+ :: (Elem a, Num a)
+ => Array4 a -> Array4 a -> Array4 a
+
+conv2d_dInp arrK arrB
+ = let  Shape4 nBimg nBchan nBh nBw = shape arrB
+        Shape4 nKimg nKchan nKh nKw = shape arrK
+        nCinp   = nKchan
+        nImgs   = same nBchan nKimg
+        shA     = Shape4 nImgs nCinp nBh nBw
+        shK1    = Shape4 1     nCinp nKh nKw
+   in   build4 shA $ \(Index4 iImg iCinp iAh iAw) ->
+        let arrBt = slicez4 arrB (Index4 iImg  0 iAh iAw) shK1
+            arrKt = slicez4 arrK (Index4 iCinp 0 0   0)   shK1
+        in  dot arrBt arrKt
+

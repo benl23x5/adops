@@ -26,6 +26,7 @@ executable adops
 
         Demo.Sobel
         Demo.Stereo
+        Demo.Ascent
 
  ghc-options:
         -O2

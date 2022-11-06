@@ -3,6 +3,7 @@ import Adops.Array
 import qualified System.Environment as S
 import qualified Demo.Stereo
 import qualified Demo.Sobel
+import qualified Demo.Ascent
 
 main :: IO ()
 main
@@ -13,6 +14,9 @@ main
 
          ["stereo", pathBmpLeft, pathBmpRight, dirOut]
           -> Demo.Stereo.runStereo pathBmpLeft pathBmpRight dirOut
+
+         ["ascent", pathBmp, dirOut]
+          -> Demo.Ascent.runAscent pathBmp dirOut
 
          _ -> putStrLn $ unlines
                 [ "usage: adops stereo <LEFT.bmp> <RIGHT.bmp> <DIR_OUT>"]
