@@ -8,7 +8,7 @@ build-type:     Simple
 executable adops
  hs-source-dirs: src
  build-depends:
-        base, bytestring, vector, bmp
+        base, bytestring, vector, bmp, binary
 
  main-is:       Main.hs
 
@@ -25,6 +25,7 @@ executable adops
         Adops.Op.Reduce
 
         Adops.Codec
+        Adops.Params
 
         Demo.Sobel
         Demo.Stereo

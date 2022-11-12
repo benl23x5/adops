@@ -22,6 +22,9 @@ costVolume
  :: (Elem a, Num a)
  => Int -> Int -> Array4 a -> Array4 a -> Array4 a
 
+-- arr{L,R} :  images x channels  x height x width
+-- output   :  images x disparity x height x width
+
 costVolume iStart count arrL arrR
  = check (shape arrL == shape arrR)
  $ let  Shape4 nImgs nChas nRows nCols = shape arrL
@@ -62,6 +65,9 @@ costVolume iStart count arrL arrR
 --    Section III b).
 --
 regression :: Array4 Float -> Array3 Float
+
+-- output : images x height x width
+
 regression arr
  = let  Shape4 nImgs nChas nRows nCols = shape arr
         aKs   = build1 (Shape1 nChas) $ \(Index1 iCha) ->

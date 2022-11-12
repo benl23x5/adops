@@ -12,8 +12,8 @@ main
          ["sobel", pathBmp, dirOut]
           -> Demo.Sobel.runSobel pathBmp dirOut
 
-         ["stereo", pathBmpLeft, pathBmpRight, dirOut]
-          -> Demo.Stereo.runStereo pathBmpLeft pathBmpRight dirOut
+         ["stereo", pathBmpLeft, pathBmpRight, dirParams, dirOut]
+          -> Demo.Stereo.runStereo pathBmpLeft pathBmpRight dirParams dirOut
 
          ["ascent", pathBmp, dirOut]
           -> Demo.Ascent.runAscent pathBmp dirOut

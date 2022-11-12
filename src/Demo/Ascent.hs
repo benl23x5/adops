@@ -24,9 +24,9 @@ runAscent pathBmp dirOut =
 
     -- Gradient ascent the base image for 100 iterations. It should
     -- gradually start to take on the edges of the original image.
-    let aAsc4_R = doAscent 10 0.01 aOutput4_R aBase
-    let aAsc4_G = doAscent 10 0.01 aOutput4_G aBase
-    let aAsc4_B = doAscent 10 0.01 aOutput4_B aBase
+    let aAsc4_R = doAscent 100 0.01 aOutput4_R aBase
+    let aAsc4_G = doAscent 100 0.01 aOutput4_G aBase
+    let aAsc4_B = doAscent 100 0.01 aOutput4_B aBase
 
     let aAsc3 = packChas3
           (Shape3 3 nRows nCols)

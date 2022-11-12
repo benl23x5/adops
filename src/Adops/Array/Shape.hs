@@ -67,6 +67,12 @@ class Dim3 sh => Dim4 sh where
  inner3 :: sh -> Int
 
 
+-- | An object with at least five dimensions.
+class Dim4 sh => Dim5 sh where
+ outer4 :: sh -> Int
+ inner4 :: sh -> Int
+
+
 -------------------------------------------------------------------------------
 -- | Flatten a shape completely.
 class Flatten sh where
@@ -312,4 +318,92 @@ instance Flatten Shape4 where
 instance Num Shape4 where
  (+) (Shape4 a0 a1 a2 a3) (Shape4 b0 b1 b2 b3)
   = Shape4 (a0 + b0) (a1 + b1) (a2 + b2) (a3 + b3)
+
+
+-------------------------------------------------------------------------------
+data Shape5
+ = Shape5 Int Int Int Int Int
+ deriving (Eq, Show)
+
+type Index5 = Shape5
+
+pattern Index5 i4 i3 i2 i1 i0 = Shape5 i4 i3 i2 i1 i0
+
+instance IsShape Shape5 where
+ size (Shape5 i4 i3 i2 i1 i0)
+  = i4 * i3 * i2 * i1 * i0
+
+ dims (Shape5 i4 i3 i2 i1 i0)
+  = [i4, i3, i2, i1, i0]
+
+ within (Index5 i4 i3 i2 i1 i0) (Shape5 s4 s3 s2 s1 s0)
+  =  i0 >= 0 && i0 < s0
+  && i1 >= 0 && i1 < s1
+  && i2 >= 0 && i2 < s2
+  && i3 >= 0 && i3 < s3
+  && i4 >= 0 && i4 < s4
+
+ toLinear (Shape5 _ s3 s2 s1 s0) (Shape5 i4 i3 i2 i1 i0)
+  = (((i4 * s3 + i3) * s2 + i2) * s1 + i1) * s0 + i0
+
+ fromLinear (Shape5 _ s3 s2 s1 s0) lix
+  = Index5 i4 i3 i2 i1 i0
+  where p0 = s0
+        p1 = s1 * s0
+        p2 = s2 * p1
+        p3 = s3 * p2
+
+        i4 = lix `div` p3
+        r4 = lix `mod` p3
+
+        i3 = r4  `div` p2
+        r3 = r4  `mod` p2
+
+        i2 = r3  `div` p1
+        r2 = r3  `mod` p1
+
+        i1 = r2  `div` p0
+        i0 = r2  `mod` p0
+
+
+instance HasStrides Shape5 where
+ type Strides Shape5 = Shape5
+ strides (Shape5 _ i3 i2 i1 i0)
+  = Shape5 (i3 * i2 * i1 * i0) (i2 * i1 * i0) (i1 * i0) i0 1
+
+
+instance Dim1 Shape5 where
+ inner0 (Shape5 _ _ _ _ i0) = i0
+ outer0 (Shape5 o0 _ _ _ _) = o0
+
+
+instance Dim2 Shape5 where
+ inner1 (Shape5 _ _ _ i1 _) = i1
+ outer1 (Shape5 _ o1 _ _ _) = o1
+
+
+instance Dim3 Shape5 where
+ inner2 (Shape5 _ _ i2 _ _) = i2
+ outer2 (Shape5 _ _ o2 _ _) = o2
+
+
+instance Dim4 Shape5 where
+ inner3 (Shape5 _ i3 _ _ _) = i3
+ outer3 (Shape5 _ _ _ o3 _) = o3
+
+
+instance Dim5 Shape5 where
+ inner4 (Shape5 i4 _ _ _ _) = i4
+ outer4 (Shape5 _ _ _ _ o4) = o4
+
+
+instance Flatten Shape5 where
+ type Flat Shape5 = Shape1
+ flatten (Shape5 i d h r c)
+  = Shape1 (i * d * h * r * c)
+
+
+instance Num Shape5 where
+ (+) (Shape5 a0 a1 a2 a3 a4) (Shape5 b0 b1 b2 b3 b4)
+  = Shape5 (a0 + b0) (a1 + b1) (a2 + b2) (a3 + b3) (a4 + b4)
 

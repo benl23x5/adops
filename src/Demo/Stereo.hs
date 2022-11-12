@@ -2,15 +2,30 @@
 module Demo.Stereo where
 import Adops.Array
 import Adops.Codec
+import Adops.Params
 import qualified Adops.Op.Disparity     as Disparity
 import qualified Adops.Op.Conv          as Conv
 import Control.Monad
 
 -------------------------------------------------------------------------------
-runStereo :: FilePath -> FilePath -> FilePath -> IO ()
-runStereo pathBmpLeft pathBmpRight dirOut
+runStereo :: FilePath -> FilePath -> FilePath -> FilePath -> IO ()
+runStereo pathBmpLeft pathBmpRight dirParams dirOut
  = do
-        -- Load input images.
+        putStrLn "* Loading model parameters"
+        let s = 4
+        param_down1 <- readConv3dSepNorm dirParams "down1" $ Shape5 s         3 1 3 3
+        param_down2 <- readConv3dSepNorm dirParams "down2" $ Shape5 (2*s)     s 1 3 3
+        param_down3 <- readConv3dSepNorm dirParams "down3" $ Shape5 (4*s) (2*s) 1 3 3
+        param_down4 <- readConv3dSepNorm dirParams "down4" $ Shape5 (8*s) (4*s) 1 3 3
+
+        param_disp1 <- readConv3dSepNorm dirParams "disp1" $ Shape5 16  1 3 3 3
+        param_disp2 <- readConv3dSepNorm dirParams "disp2" $ Shape5 16 16 3 3 3
+        param_disp3 <- readConv3dSepNorm dirParams "disp3" $ Shape5 16 16 3 3 3
+        param_disp4 <- readConv3dSepNorm dirParams "disp4" $ Shape5 16 16 3 3 3
+        param_disp5 <- readConv3dSepNorm dirParams "disp5" $ Shape5  1 16 3 3 3
+
+        print param_disp5
+
         putStrLn "* Loading input"
         aFullL3 <- readBMP pathBmpLeft
         aFullR3 <- readBMP pathBmpRight
