@@ -9,6 +9,7 @@ $ mkdir output
 $ cabal run adops stereo \
     data/flyingthings/A-0022-0015-left.bmp \
     data/flyingthings/A-0022-0015-right.bmp \
+    data/stereo/params \
     output
 ```
 
