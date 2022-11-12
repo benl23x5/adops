@@ -41,6 +41,83 @@ conv2d_pad (nPh, nPw) arrK arrA
             arrKt = slicez4 arrK (Index4 iCout 0 0   0)   shK1
         in  dot arrAt arrKt
 
+-- | Padded full convolution with unit stride over the volumetric dimensions
+--   of a rank-5 array in NCDHW order.
+--
+conv3d_pad
+  :: (Elem a, Num a)
+  => (Int, Int, Int) -> Array5 a -> Array5 a -> Array5 a
+
+conv3d_pad (nPd, nPh, nPw) arrK arrA
+ = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
+        Shape5 nCoutK nCinpK nKd nKh nKw = shape arrK
+        nCinp   = same nCinpA nCinpK
+        nBd     = nAd + 2 * nPd - nKd + 1
+        nBh     = nAh + 2 * nPh - nKh + 1
+        nBw     = nAw + 2 * nPw - nKw + 1
+        shB     = Shape5 nImgs nCoutK nBd nBh nBw
+        shK1    = Shape5 1     nCinp  nKd nKh nKw
+   in   build5 shB $ \(Index5 iImg iCout iBd iBh iBw) ->
+        let iFd   = iBd - nPd
+            iFh   = iBh - nPh
+            iFw   = iBw - nPw
+            arrAt = slicez5 arrA (Index5 iImg  0 iFd iFh iFw) shK1
+            arrKt = slicez5 arrK (Index5 iCout 0 0   0   0)   shK1
+        in  dot arrAt arrKt
+
+
+-- | Padded channel-wise convolution with unit stride over the volumetric
+--   dimensions of a rank-5 array in NCDHW order. This is the first part of a
+--   separable convolution.
+--
+conv3d_chan
+  :: (Elem a, Num a)
+  => (Int, Int, Int) -> Array5 a -> Array5 a -> Array5 a
+
+conv3d_chan (nPd, nPh, nPw) arrK arrA
+ = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
+        Shape5 nCoutK      1 nKd nKh nKw = shape arrK
+        nCinp   = nCinpA
+        nBd     = nAd + 2 * nPd - nKd + 1
+        nBh     = nAh + 2 * nPh - nKh + 1
+        nBw     = nAw + 2 * nPw - nKw + 1
+        shB     = Shape5 nImgs nCoutK nBd nBh nBw
+        shK1    = Shape5     1      1 nKd nKh nKw
+   in   build5 shB $ \(Index5 iImg iCout iBd iBh iBw) ->
+        let iFd   = iBd - nPd
+            iFh   = iBh - nPh
+            iFw   = iBw - nPw
+            arrAt = slicez5 arrA (Index5 iImg  0 iFd iFh iFw) shK1
+            arrKt = slicez5 arrK (Index5 iCout 0   0   0   0) shK1
+        in  dot arrAt arrKt
+
+
+-- | Padded point-wise convolution with unit stride over the volumetric
+--   dimensions of a rank-5 array in NCDHW order. This is the second part of a
+--   separable convolution.
+--
+conv3d_point
+  :: (Elem a, Num a)
+  => (Int, Int, Int) -> Array5 a -> Array5 a -> Array5 a
+
+conv3d_point (nPd, nPh, nPw) arrK arrA
+ = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
+        Shape5 nCoutK nCinpK   1   1   1 = shape arrK
+        nCinp   = same nCinpA nCinpK
+        nBd     = nAd + 2 * nPd
+        nBh     = nAh + 2 * nPh
+        nBw     = nAw + 2 * nPw
+        shB     = Shape5 nImgs nCoutK nBd nBh nBw
+        shK1    = Shape5     1 nCinp    1   1   1
+   in   build5 shB $ \(Index5 iImg iCout iBd iBh iBw) ->
+        let iFd   = iBd - nPd
+            iFh   = iBh - nPh
+            iFw   = iBw - nPw
+            arrAt = slicez5 arrA (Index5 iImg  0 iFd iFh iFw) shK1
+            arrKt = slicez5 arrK (Index5 iCout 0   0   0   0) shK1
+        in  dot arrAt arrKt
+
+
 --------------------------------------------------------------------------------
 -- | Derivative of unpadded full convolution with respect to the input image.
 --

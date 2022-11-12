@@ -12,12 +12,12 @@ softmax (Array sh elts)
    in   Array sh res
 
 -- | Apply batch normalisation to a rank-3 array in CHW order, given
---   pre-computed 'scale' and 'bias' parameters.
+--   pre-computed 'scale' (gamma) and 'bias' (beta) parameters.
 --
-batchnorm_inference
+batchnorm
   :: Array1 Float -> Array1 Float
   -> Array3 Float -> Array3 Float
-batchnorm_inference aScale aBias aInput =
+batchnorm aScale aBias aInput =
   build3 (shape aInput) $ \ix@(Index3 iCha iRow iCol) ->
     let input = index3 aInput ix
         scale = index1 aScale (Index1 iCha)

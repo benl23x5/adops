@@ -5,6 +5,8 @@ import Adops.Codec
 import Adops.Params
 import qualified Adops.Op.Disparity     as Disparity
 import qualified Adops.Op.Conv          as Conv
+import qualified Adops.Op.Norm          as Norm
+import qualified Adops.Op.Activate      as Actv
 import Control.Monad
 
 -------------------------------------------------------------------------------
@@ -161,3 +163,27 @@ kernels
                 , packChas3 sh [kZero,   kZero,   kSobelY]
                 ]
 
+
+-------------------------------------------------------------------------------
+
+-- | Padded separable convolution over the volumetric dimensions of a
+--   rank-5 array, followed by batch normalisation and ReLU.
+--
+conv3d_sep_norm
+  :: Params -> Array5 Float -> Array5 Float
+
+conv3d_sep_norm
+  (Conv3dSepNorm
+    aCKrn aCBia aCBeta aCGamma
+    aPKrn aPBia aPBeta aPGamma)
+  arrA
+  = let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
+          Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
+        aCconv = Conv.conv3d_chan  (1, 1, 1) aCKrn  arrA
+        aCnorm = Norm.batchnorm    aCGamma   aCBeta (reshape_5_3 aCconv)
+        aC     = Actv.relu         aCnorm
+        aPconv = Conv.conv3d_point (0, 0, 0) aPKrn  (reshape (shape aCconv) aC)
+        aPnorm = Norm.batchnorm    aPGamma   aPBeta (reshape_5_3 aPconv)
+        aP     = Actv.relu         aPnorm
+        arrB   = reshape (shape aPconv) aP
+    in  arrB

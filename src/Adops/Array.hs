@@ -3,19 +3,21 @@ module Adops.Array
         ( module Adops.Array.Shape
         , module Adops.Array.Elem
         , Array(..)
-        , Array1, Array2, Array3, Array4
+        , Array1, Array2, Array3, Array4, Array5
         , IsShape(..)
         , reshape
         , (+.), (-.), (*.), aabs
         , fill, floats, fromList
-        , build1, build2, build3, build4
+        , build1, build2, build3, build4, build5
         , packChas3, packChas4
         , index1
         , index2
         , index3, indexz3
         , index4, indexz4
+        , index5, indexz5
         , slicez3
         , slice4, slicez4
+        , slicez5
         , zipWith4
         , mapAll
         , sumAll
@@ -37,6 +39,7 @@ type Array1 a = Array Shape1 a
 type Array2 a = Array Shape2 a
 type Array3 a = Array Shape3 a
 type Array4 a = Array Shape4 a
+type Array5 a = Array Shape5 a
 
 instance IsShape sh => HasShape (Array sh a) where
  type Shape (Array sh a) = sh
@@ -137,7 +140,7 @@ build3f :: Shape3 -> (Index3 -> Float) -> Array3 Float
 build3f = build3
 
 
--- | Build an array of the given rank-1 shape,
+-- | Build an array of the given rank-4 shape,
 --   given an function to produce the element at each index.
 build4  :: Elem a => Shape4 -> (Index4 -> a) -> Array4 a
 build4 sh make
@@ -146,6 +149,17 @@ build4 sh make
 -- | Alias for `build4` that constrains the element type to be `Float`.
 build4f :: Shape4 -> (Index4 -> Float) -> Array4 Float
 build4f = build4
+
+
+-- | Build an array of the given rank-5 shape,
+--   given an function to produce the element at each index.
+build5  :: Elem a => Shape5 -> (Index5 -> a) -> Array5 a
+build5 sh make
+ = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+
+-- | Alias for `build5` that constrains the element type to be `Float`.
+build5f :: Shape5 -> (Index5 -> Float) -> Array5 Float
+build5f = build5
 
 
 ------------------------------------------------------------------------------
@@ -222,6 +236,21 @@ indexz4 (Array sh elems) ix
  | otherwise    = zero
 
 
+-- | Retrieve the element at the given index,
+--   throwing error on out of range indices.
+index5  :: Elem a => Array5 a -> Index5 -> a
+index5 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise    = error "out of range"
+
+-- | Retrieve the element at the given index,
+--   returning zero for out of range indices.
+indexz5 :: Elem a => Array5 a -> Index5 -> a
+indexz5 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise    = zero
+
+
 ------------------------------------------------------------------------------
 -- | Slice a section out of a rank-3 array,
 --   given a base offset and shape of the section.
@@ -251,6 +280,15 @@ slicez4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
 
+
+-- | Slice a section out of a rank-4 array,
+--   given a base offset and shape of the section.
+--
+--   If the slice extends out side the source array then the corresponding
+--   elements are set to zero.
+slicez5 :: Elem a => Array5 a -> Index5 -> Shape5 -> Array5 a
+slicez5 arr ixBase shResult
+ = build5 shResult $ \ixResult -> indexz5 arr (ixBase + ixResult)
 
 ------------------------------------------------------------------------------
 -- | Apply a function to every element of an array.

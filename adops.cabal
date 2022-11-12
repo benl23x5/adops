@@ -18,6 +18,7 @@ executable adops
         Adops.Array.Elem
         Adops.Array.Shape
 
+        Adops.Op.Activate
         Adops.Op.Conv
         Adops.Op.Disparity
         Adops.Op.Norm
