@@ -21,6 +21,8 @@ executable adops
         Adops.Op.Conv
         Adops.Op.Disparity
         Adops.Op.Norm
+        Adops.Op.Pool
+        Adops.Op.Reduce
 
         Adops.Codec
 

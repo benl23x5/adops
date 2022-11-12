@@ -10,10 +10,12 @@ module Adops.Array
         , fill, floats, fromList
         , build1, build2, build3, build4
         , packChas3, packChas4
+        , index1
         , index2
         , index3, indexz3
         , index4, indexz4
-        , slicez3, slicez4
+        , slicez3
+        , slice4, slicez4
         , zipWith4
         , mapAll
         , sumAll
@@ -166,6 +168,17 @@ packChas4 sh xs
 ------------------------------------------------------------------------------
 -- | Retrieve the element at the given index,
 --   throwing error on out of range indices.
+index1  :: Elem a => Array1 a -> Index1 -> a
+index1 (Array sh elems) ix
+ | within ix sh = elems U.! toLinear sh ix
+ | otherwise
+ = error $ unlines
+ [ "index1: out of range"
+ , "  index = " ++ show ix
+ , "  shape = " ++ show sh ]
+
+-- | Retrieve the element at the given index,
+--   throwing error on out of range indices.
 index2  :: Elem a => Array2 a -> Index2 -> a
 index2 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
@@ -218,6 +231,15 @@ indexz4 (Array sh elems) ix
 slicez3 :: Elem a => Array3 a -> Index3 -> Shape3 -> Array3 a
 slicez3 arr ixBase shResult
  = build3 shResult $ \ixResult -> indexz3 arr (ixBase + ixResult)
+
+
+-- | Slice a section out of a rank-4 array,
+--   given a base offset and shape of the section.
+--
+--   If the slice extends out side the source array then error.
+slice4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
+slice4 arr ixBase shResult
+ = build4 shResult $ \ixResult -> index4 arr (ixBase + ixResult)
 
 
 -- | Slice a section out of a rank-4 array,
