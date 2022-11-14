@@ -32,7 +32,7 @@ import qualified Data.Vector.Unboxed    as U
 ------------------------------------------------------------------------------
 -- | Multidimensional array.
 data Array sh a
- = Array sh (U.Vector a)
+ = Array !sh !(U.Vector a)
  deriving Show
 
 type Array1 a = Array Shape1 a

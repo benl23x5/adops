@@ -36,6 +36,7 @@ executable adops
         -O2
 
  extensions:
+        BangPatterns
         PatternGuards
         PatternSynonyms
         TypeFamilies
