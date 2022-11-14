@@ -11,9 +11,9 @@ softmax (Array sh elts)
         res = U.map (\x -> exp (x - mx) / den) elts
    in   Array sh res
 
-
 -- | Apply batch normalisation to a rank-3 array in CHW order, given
 --   pre-computed 'scale' (gamma) and 'bias' (beta) parameters.
+--
 batchnorm
   :: Array1 Float -> Array1 Float
   -> Array3 Float -> Array3 Float
@@ -22,8 +22,7 @@ batchnorm aScale aBias aInput =
     let input = index3 aInput ix
         scale = index1 aScale (Index1 iCha)
         bias  = index1 aBias  (Index1 iCha)
-    in  input * scale
-
+    in  input * scale + bias
 
 -- | Compute the batch normalisation scale and bias from learned parameters.
 batchnorm_params
