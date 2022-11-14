@@ -148,17 +148,17 @@ conv3d_sep_norm
 
 conv3d_sep_norm
   (Conv3dSepNorm
-    aCKrn aCBia aCBeta aCGamma
-    aPKrn aPBia aPBeta aPGamma)
+    aCKrn aCBia _ _ _ _ aCScale aCBias
+    aPKrn aPBia _ _ _ _ aPScale aPBias)
   (nPadLay, nPadRow, nPadCol)
   arrA
   = let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
           Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
         aCconv = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn  arrA
-        aCnorm = Norm.batchnorm    aCGamma   aCBeta (reshape_5_3 aCconv)
+        aCnorm = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
         aC     = Actv.relu         aCnorm
         aPconv = Conv.conv3d_point (0, 0, 0) aPKrn  (reshape (shape aCconv) aC)
-        aPnorm = Norm.batchnorm    aPGamma   aPBeta (reshape_5_3 aPconv)
+        aPnorm = Norm.batchnorm    aPScale   aPBias (reshape_5_3 aPconv)
         aP     = Actv.relu         aPnorm
         arrB   = reshape (shape aPconv) aP
     in  arrB
