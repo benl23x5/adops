@@ -11,12 +11,12 @@ softmax (Array sh elts)
         res = U.map (\x -> exp (x - mx) / den) elts
    in   Array sh res
 
+
 -- | Apply batch normalisation to a rank-3 array in CHW order, given
 --   pre-computed 'scale' (gamma) and 'bias' (beta) parameters.
---
 batchnorm
-  :: Array1 Float -> Array1 Float
-  -> Array3 Float -> Array3 Float
+ :: Array1 Float -> Array1 Float
+ -> Array3 Float -> Array3 Float
 batchnorm aScale aBias aInput =
   build3 (shape aInput) $ \ix@(Index3 iCha iRow iCol) ->
     let input = index3 aInput ix
@@ -24,11 +24,12 @@ batchnorm aScale aBias aInput =
         bias  = index1 aBias  (Index1 iCha)
     in  input * scale + bias
 
+
 -- | Compute the batch normalisation scale and bias from learned parameters.
 batchnorm_params
-  :: Array1 Float -> Array1 Float
-  -> Array1 Float -> Array1 Float
-  -> Float -> (Array1 Float, Array1 Float)
+ :: Array1 Float -> Array1 Float
+ -> Array1 Float -> Array1 Float
+ -> Float -> (Array1 Float, Array1 Float)
 batchnorm_params aGamma aBeta aMean aVar eps =
   let Shape1 nCha = shape aGamma
       build f =
@@ -44,3 +45,15 @@ batchnorm_params aGamma aBeta aMean aVar eps =
       bias gamma beta mean sd =
         beta - gamma * mean / sd
   in  (build scale, build bias)
+
+
+-- | Normalize an array so that [0,1] represents the full range.
+rescaleFull01 :: Array sh Float -> Array sh Float
+rescaleFull01 arr
+ = let  min   = minAll arr
+        max   = maxAll arr
+        delta = max - min
+        scale x
+         | delta == 0   = 0
+         | otherwise    = (x - min) / delta
+   in   mapAll scale arr

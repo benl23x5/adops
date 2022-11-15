@@ -11,8 +11,8 @@ data Params
  = Conv3dSepNorm
  { paramCKrn     :: Array Shape5 Float
  , paramCBia     :: Array Shape1 Float
- , paramCBeta    :: Array Shape1 Float
  , paramCGamma   :: Array Shape1 Float
+ , paramCBeta    :: Array Shape1 Float
  , paramCMean    :: Array Shape1 Float
  , paramCVar     :: Array Shape1 Float
  , paramCScale   :: Array Shape1 Float
@@ -20,8 +20,8 @@ data Params
 
  , paramPKrn     :: Array Shape5 Float
  , paramPBia     :: Array Shape1 Float
- , paramPBeta    :: Array Shape1 Float
  , paramPGamma   :: Array Shape1 Float
+ , paramPBeta    :: Array Shape1 Float
  , paramPMean    :: Array Shape1 Float
  , paramPVar     :: Array Shape1 Float
  , paramPScale   :: Array Shape1 Float
@@ -36,7 +36,9 @@ readConv3dSepNorm dir name shape
         let ds = dims shape
         let fEps = 1e-5
 
-        aCKrn   <- readFloat32LE dir (name ++ "c_krn")       (Shape5 nChasInp 1 nKrnLayers nKrnRows nKrnCols)
+        aCKrn_  <- readFloat32LE dir (name ++ "c_krn")       (Shape5 nChasInp 1 nKrnLayers nKrnRows nKrnCols)
+        let aCKrn = reshape (Shape5 1 nChasInp nKrnLayers nKrnRows nKrnCols) aCKrn_
+
         aCBia   <- readFloat32LE dir (name ++ "c_bia")       (Shape1 nChasInp)
         aCGamma <- readFloat32LE dir (name ++ "cb_gamma")    (Shape1 nChasInp)
         aCBeta  <- readFloat32LE dir (name ++ "cb_beta")     (Shape1 nChasInp)
@@ -53,8 +55,8 @@ readConv3dSepNorm dir name shape
         let (aPScale, aPBias) = Norm.batchnorm_params aPGamma aPBeta aPMean aPVar fEps
 
         return $ Conv3dSepNorm
-                  aCKrn aCBia aCBeta aCGamma aCMean aCVar aCScale aCBias
-                  aPKrn aPBia aPBeta aPGamma aPMean aPVar aPScale aPBias
+                  aCKrn aCBia aCGamma aCBeta aCMean aCVar aCScale aCBias
+                  aPKrn aPBia aPGamma aPBeta aPMean aPVar aPScale aPBias
 
 
 readFloat32LE :: IsShape sh => FilePath -> String -> sh -> IO (Array sh Float)

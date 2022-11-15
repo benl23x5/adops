@@ -3,15 +3,15 @@ module Demo.Stereo where
 import Adops.Array
 import Adops.Codec
 import Adops.Params
+import Control.Monad
+import Debug.Trace
+import Text.Printf
 import qualified Adops.Op.Disparity     as Disparity
 import qualified Adops.Op.Conv          as Conv
 import qualified Adops.Op.Norm          as Norm
 import qualified Adops.Op.Activate      as Actv
 import qualified Adops.Op.Pool          as Pool
-import Control.Monad
-import Debug.Trace
 import qualified Data.Vector.Unboxed    as U
-
 
 
 -------------------------------------------------------------------------------
@@ -50,10 +50,27 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         let aFullL  = reshape (Shape5 1 nChas 1 nRows nCols) aCropL
         let aFullR  = reshape (Shape5 1 nChas 1 nRows nCols) aCropR
 
-        aDown1L <- dump "down1L" $ pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullL
+        dump "krn"   $ paramCKrn   pDisp1
+        dump "bia"   $ paramCBia   pDisp1
+        dump "gamma" $ paramCGamma pDisp1
+        dump "beta"  $ paramCBeta  pDisp1
+        dump "mean"  $ paramCMean  pDisp1
+        dump "var"   $ paramCVar   pDisp1
+        dump "scale" $ paramCScale pDisp1
+        dump "bias"  $ paramCBias  pDisp1
+
+
+        aDown1L <- beep "aDown1L" $ pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullL
+        dumpNormTurbo5 aDown1L "output" "aDown1L"
+
         aDown2L <- dump "down2L" $ pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1L
+        dumpNormTurbo5 aDown2L "output" "aDown2L"
+
         aDown3L <- dump "down3L" $ pool $ conv3d_sep_norm pDown3 (0, 1, 1) aDown2L
+        dumpNormTurbo5 aDown3L "output" "aDown3L"
+
         aDown4L <- dump "down4L" $ pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3L
+        dumpNormTurbo5 aDown4L "output" "aDown4L"
 
         aDown1R <- dump "down1R" $ pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullR
         aDown2R <- dump "down2R" $ pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1R
@@ -61,6 +78,7 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         aDown4R <- dump "down4R" $ pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3R
 
         aCost   <- dump "volume" $ Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
+        dumpNormTurbo4 aCost "output" "aCost"
 
         aCost1  <- dump "cost1"  $ conv3d_sep_norm pDisp1 (1, 1, 1) (unsqueeze5 aCost)
         aCost2  <- dump "cost2"  $ conv3d_sep_norm pDisp2 (1, 1, 1) aCost1
@@ -102,7 +120,7 @@ dump :: Show sh => String -> Array sh Float -> IO (Array sh Float)
 dump name arr
  = do   putStrLn $ "* " ++ name
         (Array sh elts) <- return arr
-        putStrLn $ " > " ++ show sh ++ " " ++ (show $ U.take 10 elts)
+--        putStrLn $ " > " ++ show sh ++ " " ++ (show elts)
         putStrLn $ " ! min = " ++ show (U.minimum elts) ++ ", max =" ++ show (U.maximum elts)
         return arr
 
@@ -154,7 +172,7 @@ conv3d_sep_norm
   arrA
   = let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
           Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
-        aCconv = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn  arrA
+        aCconv = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn arrA
         aCnorm = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
         aC     = Actv.relu         aCnorm
         aPconv = Conv.conv3d_point (0, 0, 0) aPKrn  (reshape (shape aCconv) aC)

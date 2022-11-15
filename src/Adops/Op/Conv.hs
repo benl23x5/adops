@@ -76,7 +76,7 @@ conv3d_chan
 
 conv3d_chan (nPd, nPh, nPw) arrK arrA
  = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
-        Shape5 nCoutK      1 nKd nKh nKw = shape arrK
+        Shape5 1      nCoutK nKd nKh nKw = shape arrK
         nCinp   = nCinpA
         nBd     = nAd + 2 * nPd - nKd + 1
         nBh     = nAh + 2 * nPh - nKh + 1

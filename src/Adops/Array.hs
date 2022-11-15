@@ -20,7 +20,7 @@ module Adops.Array
         , slicez5
         , zipWith4
         , mapAll
-        , sumAll
+        , sumAll, minAll, maxAll
         , dot
         , same, check)
 where
@@ -55,9 +55,8 @@ reshape
 reshape sh2 arr@(Array _ elts)
  | not $ size (shape arr) == size sh2
  = error "shape mismatch"
-
  | otherwise = Array sh2 elts
-
+{-# INLINE reshape #-}
 
 ------------------------------------------------------------------------------
 (+.) :: (IsShape sh, U.Unbox a, Num a)
@@ -66,6 +65,7 @@ reshape sh2 arr@(Array _ elts)
  | sh1 == sh2
  = Array sh1 (U.zipWith (+) elems1 elems2)
  | otherwise   = error "shape mismatch"
+{-# INLINE (+.) #-}
 
 
 (-.) :: (IsShape sh, U.Unbox a, Num a)
@@ -74,6 +74,7 @@ reshape sh2 arr@(Array _ elts)
  | sh1 == sh2
  = Array sh1 (U.zipWith (-) elems1 elems2)
  | otherwise   = error "shape mismatch"
+{-# INLINE (-.) #-}
 
 
 (*.) :: (IsShape sh, U.Unbox a, Num a)
@@ -82,11 +83,13 @@ reshape sh2 arr@(Array _ elts)
  | sh1 == sh2
  = Array sh1 (U.zipWith (*) elems1 elems2)
  | otherwise   = error "shape mismatch"
+{-# INLINE (*.) #-}
+
 
 aabs :: (U.Unbox a, Num a) => Array sh a -> Array sh a
 aabs (Array sh elems)
  = Array sh $ U.map abs elems
-
+{-# INLINE aabs #-}
 
 ------------------------------------------------------------------------------
 -- | Construct an array of the given shape where all the elements have
@@ -95,16 +98,20 @@ fill    :: (IsShape sh, U.Unbox a)
         => sh -> a -> Array sh a
 fill sh x
  = Array sh $ U.replicate (size sh) x
+{-# INLINE fill #-}
+
 
 -- | Alias for `fill` that constraints the element type to be `Float`.
 floats :: IsShape sh => sh -> Float -> Array sh Float
 floats = fill
+{-# INLINE floats #-}
+
 
 fromList :: (IsShape sh, U.Unbox a)
          => sh -> [a] -> Array sh a
 fromList sh elts
  = Array sh (U.fromList elts)
-
+{-# INLINE fromList #-}
 
 ------------------------------------------------------------------------------
 -- | Build an array of the given rank-1 shape,
@@ -112,10 +119,13 @@ fromList sh elts
 build1  :: Elem a => Shape1 -> (Index1 -> a) -> Array1 a
 build1 sh make
  = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+{-# INLINE build1 #-}
+
 
 -- | Alias for `build1` that constrains the element type to be `Float`.
 build1f :: Shape1 -> (Index1 -> Float) -> Array1 Float
 build1f = build1
+{-# INLINE build1f #-}
 
 
 -- | Build an array of the given rank-2 shape,
@@ -123,10 +133,13 @@ build1f = build1
 build2 :: Elem a => Shape2 -> (Index2 -> a) -> Array2 a
 build2 sh make
  = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+{-# INLINE build2 #-}
+
 
 -- | Alias for `build2` that constrains the element type to be `Float`.
 build2f :: Shape2 -> (Index2 -> Float) -> Array2 Float
 build2f = build2
+{-# INLINE build2f #-}
 
 
 -- | Build an array of the given rank-3 shape,
@@ -134,10 +147,13 @@ build2f = build2
 build3 :: Elem a => Shape3 -> (Index3 -> a) -> Array3 a
 build3 sh make
  = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+{-# INLINE build3 #-}
+
 
 -- | Alias for `build3` that constrains the element type to be `Float`.
 build3f :: Shape3 -> (Index3 -> Float) -> Array3 Float
 build3f = build3
+{-# INLINE build3f #-}
 
 
 -- | Build an array of the given rank-4 shape,
@@ -145,10 +161,13 @@ build3f = build3
 build4  :: Elem a => Shape4 -> (Index4 -> a) -> Array4 a
 build4 sh make
  = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+{-# INLINE build4 #-}
+
 
 -- | Alias for `build4` that constrains the element type to be `Float`.
 build4f :: Shape4 -> (Index4 -> Float) -> Array4 Float
 build4f = build4
+{-# INLINE build4f #-}
 
 
 -- | Build an array of the given rank-5 shape,
@@ -156,10 +175,13 @@ build4f = build4
 build5  :: Elem a => Shape5 -> (Index5 -> a) -> Array5 a
 build5 sh make
  = Array sh $ U.generate (size sh) (\lix -> make $ fromLinear sh lix)
+{-# INLINE build5 #-}
+
 
 -- | Alias for `build5` that constrains the element type to be `Float`.
 build5f :: Shape5 -> (Index5 -> Float) -> Array5 Float
 build5f = build5
+{-# INLINE build5f #-}
 
 
 ------------------------------------------------------------------------------
@@ -190,6 +212,8 @@ index1 (Array sh elems) ix
  [ "index1: out of range"
  , "  index = " ++ show ix
  , "  shape = " ++ show sh ]
+{-# INLINE index1 #-}
+
 
 -- | Retrieve the element at the given index,
 --   throwing error on out of range indices.
@@ -201,6 +225,8 @@ index2 (Array sh elems) ix
  [ "index2: out of range"
  , "  index = " ++ show ix
  , "  shape = " ++ show sh ]
+{-# INLINE index2 #-}
+
 
 -- | Retrieve the element at the given index,
 --   throwing error on out of range indices.
@@ -212,6 +238,8 @@ index3 (Array sh elems) ix
  [ "index3: out of range"
  , "  index = " ++ show ix
  , "  shape = " ++ show sh ]
+{-# INLINE index3 #-}
+
 
 -- | Retrieve the element at the given index,
 --   returning zero for out of range indices.
@@ -219,6 +247,7 @@ indexz3 :: Elem a => Array3 a -> Index3 -> a
 indexz3 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
  | otherwise    = zero
+{-# INLINE indexz3 #-}
 
 
 -- | Retrieve the element at the given index,
@@ -227,6 +256,8 @@ index4  :: Elem a => Array4 a -> Index4 -> a
 index4 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
  | otherwise    = error "out of range"
+{-# INLINE index4 #-}
+
 
 -- | Retrieve the element at the given index,
 --   returning zero for out of range indices.
@@ -234,6 +265,7 @@ indexz4 :: Elem a => Array4 a -> Index4 -> a
 indexz4 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
  | otherwise    = zero
+{-# INLINE indexz4 #-}
 
 
 -- | Retrieve the element at the given index,
@@ -242,6 +274,8 @@ index5  :: Elem a => Array5 a -> Index5 -> a
 index5 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
  | otherwise    = error "out of range"
+{-# INLINE index5 #-}
+
 
 -- | Retrieve the element at the given index,
 --   returning zero for out of range indices.
@@ -249,6 +283,7 @@ indexz5 :: Elem a => Array5 a -> Index5 -> a
 indexz5 (Array sh elems) ix
  | within ix sh = elems U.! toLinear sh ix
  | otherwise    = zero
+{-# INLINE indexz5 #-}
 
 
 ------------------------------------------------------------------------------
@@ -260,7 +295,7 @@ indexz5 (Array sh elems) ix
 slicez3 :: Elem a => Array3 a -> Index3 -> Shape3 -> Array3 a
 slicez3 arr ixBase shResult
  = build3 shResult $ \ixResult -> indexz3 arr (ixBase + ixResult)
-
+{-# INLINE slicez3 #-}
 
 -- | Slice a section out of a rank-4 array,
 --   given a base offset and shape of the section.
@@ -269,6 +304,7 @@ slicez3 arr ixBase shResult
 slice4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
 slice4 arr ixBase shResult
  = build4 shResult $ \ixResult -> index4 arr (ixBase + ixResult)
+{-# INLINE slice4 #-}
 
 
 -- | Slice a section out of a rank-4 array,
@@ -279,6 +315,7 @@ slice4 arr ixBase shResult
 slicez4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
+{-# INLINE slicez4 #-}
 
 
 -- | Slice a section out of a rank-4 array,
@@ -289,12 +326,14 @@ slicez4 arr ixBase shResult
 slicez5 :: Elem a => Array5 a -> Index5 -> Shape5 -> Array5 a
 slicez5 arr ixBase shResult
  = build5 shResult $ \ixResult -> indexz5 arr (ixBase + ixResult)
+{-# INLINE slicez5 #-}
+
 
 ------------------------------------------------------------------------------
 -- | Apply a function to every element of an array.
 mapAll :: (Elem a, Elem b) => (a -> b) -> Array sh a -> Array sh b
 mapAll f (Array sh elts) = Array sh $ U.map f elts
-
+{-# INLINE mapAll #-}
 
 ------------------------------------------------------------------------------
 -- | Combine corresponding elements of two rank-4 arrays element-wise.
@@ -306,13 +345,25 @@ zipWith4 f arrA arrB
  | not $ shape arrA == shape arrB = error "array shape mismatch"
  | otherwise
  = build4 (shape arrA) $ \ix -> f (index4 arrA ix) (index4 arrB ix)
-
+{-# INLINE zipWith4 #-}
 
 ------------------------------------------------------------------------------
 -- | Sum all the elements in an array.
 sumAll :: (Elem a, Num a) => Array sh a -> a
-sumAll (Array _ elems)
- = U.sum elems
+sumAll (Array _ elems) = U.sum elems
+{-# INLINE sumAll #-}
+
+
+-- | Compute the minimum of all elements in the array.
+maxAll :: (Elem a, Ord a) => Array sh a -> a
+maxAll (Array _ elems) = U.maximum elems
+{-# INLINE maxAll #-}
+
+
+-- | Compute the minimum of all elements in the array.
+minAll :: (Elem a, Ord a) => Array sh a -> a
+minAll (Array _ elems) = U.minimum elems
+{-# INLINE minAll #-}
 
 
 ------------------------------------------------------------------------------
@@ -323,6 +374,7 @@ dot (Array sh1 elems1) (Array sh2 elems2)
  | not $ sh1 == sh2 = error "array shape mismatch"
  | otherwise
  = U.sum $ U.zipWith (*) elems1 elems2
+{-# INLINE dot #-}
 
 
 ------------------------------------------------------------------------------
@@ -330,9 +382,10 @@ same    :: Eq a => a -> a -> a
 same x1 x2
  | x1 == x2     = x1
  | otherwise    = error "not the same"
+{-# INLINE same #-}
 
 
 check   :: Bool -> a -> a
 check True x = x
 check False x = error "check failed"
-
+{-# INLINE check #-}
