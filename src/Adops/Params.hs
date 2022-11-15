@@ -36,9 +36,7 @@ readConv3dSepNorm dir name shape
         let ds = dims shape
         let fEps = 1e-5
 
-        aCKrn_  <- readFloat32LE dir (name ++ "c_krn")       (Shape5 nChasInp 1 nKrnLayers nKrnRows nKrnCols)
-        let aCKrn = reshape (Shape5 1 nChasInp nKrnLayers nKrnRows nKrnCols) aCKrn_
-
+        aCKrn   <- readFloat32LE dir (name ++ "c_krn")       (Shape5 nChasInp 1 nKrnLayers nKrnRows nKrnCols)
         aCBia   <- readFloat32LE dir (name ++ "c_bia")       (Shape1 nChasInp)
         aCGamma <- readFloat32LE dir (name ++ "cb_gamma")    (Shape1 nChasInp)
         aCBeta  <- readFloat32LE dir (name ++ "cb_beta")     (Shape1 nChasInp)
