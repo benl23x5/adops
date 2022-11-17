@@ -78,7 +78,7 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         aDown4R <- dump "down4R" $ pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3R
 
         aCost   <- dump "volume" $ Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
-        dumpNormTurbo4 aCost "output" "aCost"
+        dumpNormTurbo4 aCost "output" "bCost"
 
         aCost1  <- dump "cost1"  $ conv3d_sep_norm pDisp1 (1, 1, 1) (unsqueeze5 aCost)
         aCost2  <- dump "cost2"  $ conv3d_sep_norm pDisp2 (1, 1, 1) aCost1
@@ -121,7 +121,7 @@ dump name arr
  = do   putStrLn $ "* " ++ name
         (Array sh elts) <- return arr
 --        putStrLn $ " > " ++ show sh ++ " " ++ (show elts)
-        putStrLn $ " ! min = " ++ show (U.minimum elts) ++ ", max =" ++ show (U.maximum elts)
+--        putStrLn $ " ! min = " ++ show (U.minimum elts) ++ ", max =" ++ show (U.maximum elts)
         return arr
 
 

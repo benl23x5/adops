@@ -15,6 +15,6 @@ maxpool (hK, wK) ceil aI =
       wO    = wI `div` wK
       slice = if ceil then slicez4 else slice4
   in  build4 (Shape4 nImg nCha hO wO) $ \(Index4 iImg iCha h w) ->
-        let iI = Shape4 iImg iCha (h + hK) (w + wK)
+        let iI = Shape4 iImg iCha (h * hK) (w * wK)
             sI = slice  aI iI shK
         in  A.max sI
