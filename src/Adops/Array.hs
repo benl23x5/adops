@@ -20,7 +20,7 @@ module Adops.Array
         , slice5, slicez5
         , zipWith4
         , mapAll
-        , sumAll, minAll, maxAll
+        , sumAll, minAll, maxAll, meanAll
         , dot
         , same, check)
 where
@@ -375,6 +375,12 @@ maxAll (Array _ elems) = U.maximum elems
 minAll :: (Elem a, Ord a) => Array sh a -> a
 minAll (Array _ elems) = U.minimum elems
 {-# INLINE minAll #-}
+
+
+-- | Sum all the elements in an array.
+meanAll :: IsShape sh => Array sh Float -> Float
+meanAll (Array sh elems) = U.sum elems / fromIntegral (size sh)
+{-# INLINE meanAll #-}
 
 
 ------------------------------------------------------------------------------

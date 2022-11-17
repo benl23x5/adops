@@ -12,6 +12,7 @@ import qualified Adops.Op.Norm          as Norm
 import qualified Adops.Op.Activate      as Actv
 import qualified Adops.Op.Pool          as Pool
 import qualified Data.Vector.Unboxed    as U
+import qualified System.Exit            as System
 
 -------------------------------------------------------------------------------
 runStereo :: FilePath -> FilePath -> FilePath -> FilePath -> IO ()
@@ -49,17 +50,9 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         let aFullL  = reshape (Shape5 1 nChas 1 nRows nCols) aCropL
         let aFullR  = reshape (Shape5 1 nChas 1 nRows nCols) aCropR
 
-        dump "krn"   $ paramCKrn   pDisp1
-        dump "bia"   $ paramCBia   pDisp1
-        dump "gamma" $ paramCGamma pDisp1
-        dump "beta"  $ paramCBeta  pDisp1
-        dump "mean"  $ paramCMean  pDisp1
-        dump "var"   $ paramCVar   pDisp1
-        dump "scale" $ paramCScale pDisp1
-        dump "bias"  $ paramCBias  pDisp1
-
-
         aDown1L <- fmap pool $ conv3d_sep_norm "aDown1L" pDown1 (0, 1, 1) aFullL
+--        System.exitWith (System.ExitSuccess)
+
         aDown2L <- fmap pool $ conv3d_sep_norm "aDown2L" pDown2 (0, 1, 1) aDown1L
         aDown3L <- fmap pool $ conv3d_sep_norm "aDown3L" pDown3 (0, 1, 1) aDown2L
         aDown4L <- fmap pool $ conv3d_sep_norm "aDown4L" pDown4 (0, 1, 1) aDown3L
@@ -171,13 +164,29 @@ conv3d_sep_norm tag
         let aP     = Actv.relu         aPnorm
         let arrB   = reshape (shape aPconv) aP
 
-        print aCKrn
-        print aCBia
+        let aResult   = Conv.conv3d_chan (0, 1, 1) aCKrn aCBia arrA
+        let aPatchOut = slicez5 aResult (Index5 0 0 0 100 100) (Index5 1 1 1 1 1)
 
-        dumpNormTurbo5 arrA "output" (tag ++ "-i")
-        dumpNormTurbo5 (reshape (shape aCconv) aCconv) "output" (tag ++ "-c")
-        dumpNormTurbo5 aCconv                          "output" (tag ++ "-cc")
-        dumpNormTurbo5 (reshape (shape aPconv) aPconv) "output" (tag ++ "-p")
+        let aPatchIn  = slicez5 arrA  (Index5 0 0 0 99 99) (Index5 1 1 1 3 3)
+        let aKrn1     = slicez5 aCKrn (Index5 0 0 0 0 0) (Index5 1 1 1 3 3)
+        let aBia1     = index1 aCBia (Index1 0)
+        let aAgain    = dot aPatchIn aKrn1 + aBia1
+
+        putStrLn $ unlines
+         [ "aPatchOut: " ++ show aPatchOut
+
+         , "aPatchIn:  " ++ show aPatchIn
+         , "aKrn1:     " ++ show aKrn1
+         , "aBia1:     " ++ show aBia1
+         , "aAgain:    " ++ show aAgain
+         , "mean in:   " ++ show (meanAll arrA)
+         , "mean out:  " ++ show (meanAll aCconv) ]
+
+        dumpNormTurbo5 arrA   "output" (tag ++ "-i")
+        dumpNormTurbo5 aCconv "output" (tag ++ "-cc")
+
+--        dumpNormTurbo5 (reshape (shape aCconv) aCconv) "output" (tag ++ "-c")
+--        dumpNormTurbo5 (reshape (shape aPconv) aPconv) "output" (tag ++ "-p")
 
         return arrB
 

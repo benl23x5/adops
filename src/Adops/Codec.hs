@@ -20,7 +20,7 @@ readBMP filePath
         let shBMP  = Index3 height width 4
 
         return $ build3 (Shape3 3 height width) $ \(Index3 iCha iRow iCol) ->
-         let  lix = toLinear shBMP $ Index3 iRow iCol iCha
+         let  lix = toLinear shBMP $ Index3 (height - iRow - 1) iCol iCha
               u8  = BS.index bsRGBA lix
           in  fromIntegral u8 / 255
 
@@ -40,7 +40,7 @@ writeBMP filePath arr
                      = fromLinear shRGBA lix
 
                     f32 | iCha == 3     = 1
-                        | otherwise     = index3 arr (Index3 iCha iRow iCol)
+                        | otherwise     = index3 arr (Index3 iCha (height - iRow - 1) iCol)
 
                     u8  | f32 <= 0      = 0
                         | f32 >= 1      = 255
@@ -77,8 +77,14 @@ writeTurbo5 arr mkFileName
 --
 writeNormTurbo5 :: Array5 Float -> (Int -> Int -> Int -> FilePath) -> IO ()
 writeNormTurbo5 arr mkFileName
- = writeTurbo5 (Norm.rescaleFull01 arr) mkFileName
-
+ = do   let (Shape5 nImgs nChas nLays nRows nCols) = shape arr
+        forM_   [0..nImgs - 1] $ \iImg ->
+         forM_  [0..nChas - 1] $ \iCha ->
+          forM_ [0..nLays - 1] $ \iLay -> do
+                let aSlice5 = slicez5 arr (Index5 iImg iCha iLay 0 0) (Shape5 1 1 1 nRows nCols)
+                let aSlice2 = reshape (Shape2 nRows nCols) aSlice5
+                let aTurbo  = renderTurbo aSlice2
+                writeBMP (mkFileName iImg iCha iLay) $ Norm.rescaleFull01 aTurbo
 
 -- | Write multiple channels from a rank-4 array to separate BMP files
 --   using the Google Turbo Color map, given a base directory and name

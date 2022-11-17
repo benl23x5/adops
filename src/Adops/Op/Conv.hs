@@ -90,8 +90,14 @@ conv3d_chan (nPd, nPh, nPw) arrK arrB arrA
             iFw   = iBw - nPw
             arrAt = slicez5 arrA (Index5 iImg  iCout iFd iFh iFw) shK1
             arrKt = slice5  arrK (Index5 iCout 0       0   0   0) shK1
-        in  (if [iImg, iCout, iBd, iBh, iBw] == [0, 2, 0, 10, 10]
-                then trace ("AK: " ++ show (arrAt, arrKt))
+        in  (if [iImg, iCout, iBd, iBh, iBw] == [0, 0, 0, 100, 100]
+                then trace (unlines
+                        [ "pads:      " ++ show (nPd, nPh, nPw)
+                        , "sizes:     " ++ show (nBd, nBh, nBw)
+                        , "conv At:   " ++ show arrAt
+                        , "conv Kt:   " ++ show arrKt
+                        , "dot:       " ++ show (dot arrAt arrKt)
+                        , "bia:       " ++ show (index1 arrB (Index1 iCout)) ])
                 else id)
                 $ dot arrAt arrKt + index1 arrB (Index1 iCout)
 {-# INLINE conv3d_chan #-}
