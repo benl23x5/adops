@@ -83,8 +83,8 @@ writeNormTurbo5 arr mkFileName
           forM_ [0..nLays - 1] $ \iLay -> do
                 let aSlice5 = slicez5 arr (Index5 iImg iCha iLay 0 0) (Shape5 1 1 1 nRows nCols)
                 let aSlice2 = reshape (Shape2 nRows nCols) aSlice5
-                let aTurbo  = renderTurbo aSlice2
-                writeBMP (mkFileName iImg iCha iLay) $ Norm.rescaleFull01 aTurbo
+                let aTurbo  = renderTurbo $ Norm.rescaleFull01 aSlice2
+                writeBMP (mkFileName iImg iCha iLay) aTurbo
 
 -- | Write multiple channels from a rank-4 array to separate BMP files
 --   using the Google Turbo Color map, given a base directory and name
