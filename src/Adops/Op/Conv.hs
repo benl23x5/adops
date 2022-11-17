@@ -1,6 +1,7 @@
 
 module Adops.Op.Conv where
 import Adops.Array
+import Debug.Trace
 
 -- | Unpadded full convolution,
 --   where the output size is the same as the input size.
@@ -71,10 +72,10 @@ conv3d_pad (nPd, nPh, nPw) arrK arrA
 --   separable convolution.
 --
 conv3d_chan
-  :: (Elem a, Num a)
-  => (Int, Int, Int) -> Array5 a -> Array5 a -> Array5 a
+  :: (Elem a, Num a, Show a)
+  => (Int, Int, Int) -> Array5 a -> Array1 a -> Array5 a -> Array5 a
 
-conv3d_chan (nPd, nPh, nPw) arrK arrA
+conv3d_chan (nPd, nPh, nPw) arrK arrB arrA
  = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
         Shape5 nCoutK      1 nKd nKh nKw = shape arrK
         nCinp   = nCinpA
@@ -87,10 +88,13 @@ conv3d_chan (nPd, nPh, nPw) arrK arrA
         let iFd   = iBd - nPd
             iFh   = iBh - nPh
             iFw   = iBw - nPw
-            arrAt = slicez5 arrA (Index5 iImg  0 iFd iFh iFw) shK1
-            arrKt = slicez5 arrK (Index5 iCout 0   0   0   0) shK1
-        in  dot arrAt arrKt
-
+            arrAt = slicez5 arrA (Index5 iImg  iCout iFd iFh iFw) shK1
+            arrKt = slice5  arrK (Index5 iCout 0       0   0   0) shK1
+        in  (if [iImg, iCout, iBd, iBh, iBw] == [0, 2, 0, 10, 10]
+                then trace ("AK: " ++ show (arrAt, arrKt))
+                else id)
+                $ dot arrAt arrKt + index1 arrB (Index1 iCout)
+{-# INLINE conv3d_chan #-}
 
 -- | Padded point-wise convolution with unit stride over the volumetric
 --   dimensions of a rank-5 array in NCDHW order. This is the second part of a
@@ -98,9 +102,9 @@ conv3d_chan (nPd, nPh, nPw) arrK arrA
 --
 conv3d_point
   :: (Elem a, Num a)
-  => (Int, Int, Int) -> Array5 a -> Array5 a -> Array5 a
+  => (Int, Int, Int) -> Array5 a -> Array1 a -> Array5 a -> Array5 a
 
-conv3d_point (nPd, nPh, nPw) arrK arrA
+conv3d_point (nPd, nPh, nPw) arrK arrB arrA
  = let  Shape5 nImgs  nCinpA nAd nAh nAw = shape arrA
         Shape5 nCoutK nCinpK   1   1   1 = shape arrK
         nCinp   = same nCinpA nCinpK
@@ -114,8 +118,9 @@ conv3d_point (nPd, nPh, nPw) arrK arrA
             iFh   = iBh - nPh
             iFw   = iBw - nPw
             arrAt = slicez5 arrA (Index5 iImg  0 iFd iFh iFw) shK1
-            arrKt = slicez5 arrK (Index5 iCout 0   0   0   0) shK1
-        in  dot arrAt arrKt
+            arrKt = slice5  arrK (Index5 iCout 0   0   0   0) shK1
+        in  dot arrAt arrKt + index1 arrB (Index1 iCout)
+{-# INLINE conv3d_point #-}
 
 
 --------------------------------------------------------------------------------

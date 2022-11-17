@@ -17,7 +17,7 @@ module Adops.Array
         , index5, indexz5
         , slicez3
         , slice4, slicez4
-        , slicez5
+        , slice5, slicez5
         , zipWith4
         , mapAll
         , sumAll, minAll, maxAll
@@ -316,6 +316,17 @@ slicez4 :: Elem a => Array4 a -> Index4 -> Shape4 -> Array4 a
 slicez4 arr ixBase shResult
  = build4 shResult $ \ixResult -> indexz4 arr (ixBase + ixResult)
 {-# INLINE slicez4 #-}
+
+
+
+-- | Slice a section out of a rank-5 array,
+--   given a base offset and shape of the section.
+--
+--   If the slice extends out side the source array then error.
+slice5 :: Elem a => Array5 a -> Index5 -> Shape5 -> Array5 a
+slice5 arr ixBase shResult
+ = build5 shResult $ \ixResult -> index5 arr (ixBase + ixResult)
+{-# INLINE slice5 #-}
 
 
 -- | Slice a section out of a rank-4 array,

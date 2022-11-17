@@ -13,7 +13,6 @@ import qualified Adops.Op.Activate      as Actv
 import qualified Adops.Op.Pool          as Pool
 import qualified Data.Vector.Unboxed    as U
 
-
 -------------------------------------------------------------------------------
 runStereo :: FilePath -> FilePath -> FilePath -> FilePath -> IO ()
 runStereo pathBmpLeft pathBmpRight dirParams dirOut
@@ -60,33 +59,25 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         dump "bias"  $ paramCBias  pDisp1
 
 
-        aDown1L <- beep "aDown1L" $ pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullL
-        dumpNormTurbo5 aDown1L "output" "aDown1L"
+        aDown1L <- fmap pool $ conv3d_sep_norm "aDown1L" pDown1 (0, 1, 1) aFullL
+        aDown2L <- fmap pool $ conv3d_sep_norm "aDown2L" pDown2 (0, 1, 1) aDown1L
+        aDown3L <- fmap pool $ conv3d_sep_norm "aDown3L" pDown3 (0, 1, 1) aDown2L
+        aDown4L <- fmap pool $ conv3d_sep_norm "aDown4L" pDown4 (0, 1, 1) aDown3L
 
-        aDown2L <- dump "down2L" $ pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1L
-        dumpNormTurbo5 aDown2L "output" "aDown2L"
+        aDown1R <- fmap pool $ conv3d_sep_norm "aDown1R" pDown1 (0, 1, 1) aFullR
+        aDown2R <- fmap pool $ conv3d_sep_norm "aDown2R" pDown2 (0, 1, 1) aDown1R
+        aDown3R <- fmap pool $ conv3d_sep_norm "aDown3R" pDown3 (0, 1, 1) aDown2R
+        aDown4R <- fmap pool $ conv3d_sep_norm "aDown4R" pDown4 (0, 1, 1) aDown3R
 
-        aDown3L <- dump "down3L" $ pool $ conv3d_sep_norm pDown3 (0, 1, 1) aDown2L
-        dumpNormTurbo5 aDown3L "output" "aDown3L"
+        let aCost = Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
 
-        aDown4L <- dump "down4L" $ pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3L
-        dumpNormTurbo5 aDown4L "output" "aDown4L"
+        aCost1  <- conv3d_sep_norm "bCost1" pDisp1 (1, 1, 1) (unsqueeze5 aCost)
+        aCost2  <- conv3d_sep_norm "bCost2" pDisp2 (1, 1, 1) aCost1
+        aCost3  <- conv3d_sep_norm "bCost3" pDisp3 (1, 1, 1) aCost2
+        aCost4  <- conv3d_sep_norm "bCost4" pDisp4 (1, 1, 1) aCost3
+        aCost5  <- conv3d_sep_norm "bCost5" pDisp5 (1, 1, 1) aCost4
 
-        aDown1R <- dump "down1R" $ pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullR
-        aDown2R <- dump "down2R" $ pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1R
-        aDown3R <- dump "down3R" $ pool $ conv3d_sep_norm pDown3 (0, 1, 1) aDown2R
-        aDown4R <- dump "down4R" $ pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3R
-
-        aCost   <- dump "volume" $ Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
-        dumpNormTurbo4 aCost "output" "bCost"
-
-        aCost1  <- dump "cost1"  $ conv3d_sep_norm pDisp1 (1, 1, 1) (unsqueeze5 aCost)
-        aCost2  <- dump "cost2"  $ conv3d_sep_norm pDisp2 (1, 1, 1) aCost1
-        aCost3  <- dump "cost3"  $ conv3d_sep_norm pDisp3 (1, 1, 1) aCost2
-        aCost4  <- dump "cost4"  $ conv3d_sep_norm pDisp4 (1, 1, 1) aCost3
-        aCost5  <- dump "cost5"  $ conv3d_sep_norm pDisp5 (1, 1, 1) aCost4
-
-        aDisp'  <- dump "regress" $ Disparity.regression (squeeze5 aCost5)
+        let aDisp' = Disparity.regression (squeeze5 aCost5)
 
         -- Multiply by 16 to rescale disparity to be relative to full input range.
         let aDisp = mapAll (* 16) aDisp'
@@ -162,27 +153,38 @@ takeChannel3 iImg arr
 --   rank-5 array, followed by batch normalisation and ReLU.
 --
 conv3d_sep_norm
-  :: Params -> (Int, Int, Int) -> Array5 Float -> Array5 Float
+  :: String -> Params -> (Int, Int, Int) -> Array5 Float -> IO (Array5 Float)
 
-conv3d_sep_norm
+conv3d_sep_norm tag
   (Conv3dSepNorm
     aCKrn aCBia _ _ _ _ aCScale aCBias
     aPKrn aPBia _ _ _ _ aPScale aPBias)
   (nPadLay, nPadRow, nPadCol)
   arrA
-  = let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
-          Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
-        aCconv = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn arrA
-        aCnorm = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
-        aC     = Actv.relu         aCnorm
-        aPconv = Conv.conv3d_point (0, 0, 0) aPKrn  (reshape (shape aCconv) aC)
-        aPnorm = Norm.batchnorm    aPScale   aPBias (reshape_5_3 aPconv)
-        aP     = Actv.relu         aPnorm
-        arrB   = reshape (shape aPconv) aP
-    in  arrB
+  = do  let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
+                Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
+        let aCconv = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn aCBia arrA
+        let aCnorm = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
+        let aC     = Actv.relu         aCnorm
+        let aPconv = Conv.conv3d_point (0, 0, 0) aPKrn aPBia  (reshape (shape aCconv) aC)
+        let aPnorm = Norm.batchnorm    aPScale   aPBias (reshape_5_3 aPconv)
+        let aP     = Actv.relu         aPnorm
+        let arrB   = reshape (shape aPconv) aP
+
+        print aCKrn
+        print aCBia
+
+        dumpNormTurbo5 arrA "output" (tag ++ "-i")
+        dumpNormTurbo5 (reshape (shape aCconv) aCconv) "output" (tag ++ "-c")
+        dumpNormTurbo5 aCconv                          "output" (tag ++ "-cc")
+        dumpNormTurbo5 (reshape (shape aPconv) aPconv) "output" (tag ++ "-p")
+
+        return arrB
 
 pool :: Array5 Float -> Array5 Float
 pool arr = unsqueeze5 $ Pool.maxpool (2, 2) False $ squeeze5 arr
+
+
 
 
 {-
