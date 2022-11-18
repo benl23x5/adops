@@ -21,6 +21,7 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         -- hyper parameters of the trained model.
         let nStartChannels  = 4
         let nDispMax16      = 12
+        let nDispMaxFull    = nDispMax16 * 16
         let ixCropBase      = Index2   0   0
         let ixCropShape     = Index2 512 960
 
@@ -50,67 +51,67 @@ runStereo pathBmpLeft pathBmpRight dirParams dirOut
         let aFullL  = reshape (Shape5 1 nChas 1 nRows nCols) aCropL
         let aFullR  = reshape (Shape5 1 nChas 1 nRows nCols) aCropR
 
-        aDown1L <- fmap pool $ conv3d_sep_norm "aDown1L" pDown1 (0, 1, 1) aFullL
---        System.exitWith (System.ExitSuccess)
+        let aDown1L = pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullL
+        let aDown2L = pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1L
+        let aDown3L = pool $ conv3d_sep_norm pDown3 (0, 1, 1) aDown2L
+        let aDown4L = pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3L
 
-        aDown2L <- fmap pool $ conv3d_sep_norm "aDown2L" pDown2 (0, 1, 1) aDown1L
-        aDown3L <- fmap pool $ conv3d_sep_norm "aDown3L" pDown3 (0, 1, 1) aDown2L
-        aDown4L <- fmap pool $ conv3d_sep_norm "aDown4L" pDown4 (0, 1, 1) aDown3L
+        let aDown1R = pool $ conv3d_sep_norm pDown1 (0, 1, 1) aFullR
+        let aDown2R = pool $ conv3d_sep_norm pDown2 (0, 1, 1) aDown1R
+        let aDown3R = pool $ conv3d_sep_norm pDown3 (0, 1, 1) aDown2R
+        let aDown4R = pool $ conv3d_sep_norm pDown4 (0, 1, 1) aDown3R
 
-        aDown1R <- fmap pool $ conv3d_sep_norm "aDown1R" pDown1 (0, 1, 1) aFullR
-        aDown2R <- fmap pool $ conv3d_sep_norm "aDown2R" pDown2 (0, 1, 1) aDown1R
-        aDown3R <- fmap pool $ conv3d_sep_norm "aDown3R" pDown3 (0, 1, 1) aDown2R
-        aDown4R <- fmap pool $ conv3d_sep_norm "aDown4R" pDown4 (0, 1, 1) aDown3R
+        let aCost0_ = Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
+        let (Shape4 1 nChasCost nRowsCost nColsCost) = shape aCost0_
+        let aCost0  = reshape (Shape5 1 1 nChasCost nRowsCost nColsCost) aCost0_
 
-        let aCost = Disparity.costVolume 0 nDispMax16 (squeeze5 aDown4L) (squeeze5 aDown4R)
-        dumpNormTurbo4 aCost "output" "bCost"
+        let aCost1  = conv3d_sep_norm pDisp1 (1, 1, 1) aCost0
+        let aCost2  = conv3d_sep_norm pDisp2 (1, 1, 1) aCost1
+        let aCost3  = conv3d_sep_norm pDisp3 (1, 1, 1) aCost2
+        let aCost4  = conv3d_sep_norm pDisp4 (1, 1, 1) aCost3
+        let aCost5  = conv3d_sep_norm pDisp5 (1, 1, 1) aCost4
 
-        aCost1  <- conv3d_sep_norm "bCost1" pDisp1 (1, 1, 1) (unsqueeze5 aCost)
-        aCost2  <- conv3d_sep_norm "bCost2" pDisp2 (1, 1, 1) aCost1
-        aCost3  <- conv3d_sep_norm "bCost3" pDisp3 (1, 1, 1) aCost2
-        aCost4  <- conv3d_sep_norm "bCost4" pDisp4 (1, 1, 1) aCost3
-        aCost5  <- conv3d_sep_norm "bCost5" pDisp5 (1, 1, 1) aCost4
-
-        let aDisp' = Disparity.regression (squeeze5 aCost5)
+        let aCost5' = reshape (Shape4 1 nChasCost nRowsCost nColsCost) aCost5
+        let aDisp'  = Disparity.regression aCost5'
 
         -- Multiply by 16 to rescale disparity to be relative to full input range.
+        -- This is the final output of the model.
         let aDisp = mapAll (* 16) aDisp'
 
-        -- In practice the image pairs do not use the full disparity range,
-        --  so use a smaller range for rendering. Large disparities will be
-        --  clipped to the maximum value in the color map.
-        let nRenderMax = 12
-        let nRenderMin = 0
-        let norm x
-                | x <= nRenderMin = 0
-                | x >= nRenderMax = 1
-                | otherwise = (x - nRenderMin) / (nRenderMax - nRenderMin)
-
-        let aNorm  = mapAll norm aDisp
-
-        -- Slice out the result and render it as a new image.
-        let aSlice = takeChannel3 0 aNorm
-        aDisp  <- beep "render" $ renderTurbo aSlice
-        writeBMP (dirOut ++ "/disparity.bmp") aDisp
+        -- Normalized to range [0,1] for rendering.
+        let aNorm  = mapAll (/ fromIntegral nDispMaxFull) aDisp
+        let aImage = renderTurbo $ takeChannel3 0 aNorm
+        writeBMP (dirOut ++ "/disparity.bmp") aImage
 
 
-beep :: String -> a -> IO a
-beep name x
- = do   putStrLn $ "* " ++ name
-        !xx <- return x
-        return xx
+-------------------------------------------------------------------------------
+-- | Padded separable convolution over the volumetric dimensions of a
+--   rank-5 array, followed by batch normalisation and ReLU.
+--
+conv3d_sep_norm
+  :: Params -> (Int, Int, Int) -> Array5 Float -> Array5 Float
+
+conv3d_sep_norm
+  (Conv3dSepNorm
+    aCKrn aCBia _ _ _ _ aCScale aCBias
+    aPKrn aPBia _ _ _ _ aPScale aPBias)
+  (nPadLay, nPadRow, nPadCol)
+  arrA
+  = let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
+         Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
+        aCconv    = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn aCBia arrA
+        aCnorm    = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
+        aC        = Actv.relu         aCnorm
+        aPconv    = Conv.conv3d_point (0, 0, 0) aPKrn aPBia  (reshape (shape aCconv) aC)
+        aPnorm    = Norm.batchnorm    aPScale   aPBias (reshape_5_3 aPconv)
+        aP        = Actv.relu         aPnorm
+     in reshape (shape aPconv) aP
+
+pool :: Array5 Float -> Array5 Float
+pool arr = unsqueeze5 $ Pool.maxpool (2, 2) False $ squeeze5 arr
 
 
-dump :: Show sh => String -> Array sh Float -> IO (Array sh Float)
-dump name arr
- = do   putStrLn $ "* " ++ name
-        (Array sh elts) <- return arr
---        putStrLn $ " > " ++ show sh ++ " " ++ (show elts)
---        putStrLn $ " ! min = " ++ show (U.minimum elts) ++ ", max =" ++ show (U.maximum elts)
-        return arr
-
-
-
+-------------------------------------------------------------------------------
 squeeze5 :: Array5 Float -> Array4 Float
 squeeze5 arr
  = let  Shape5 nCount nChas 1 nRows nCols = shape arr
@@ -140,44 +141,4 @@ takeChannel3 iImg arr
  = let  Shape3 _ nRows nCols = shape arr
    in   reshape (Shape2 nRows nCols)
          $ slicez3 arr (Index3 iImg 0 0) (Shape3 1 nRows nCols)
-
-
--------------------------------------------------------------------------------
--- | Padded separable convolution over the volumetric dimensions of a
---   rank-5 array, followed by batch normalisation and ReLU.
---
-conv3d_sep_norm
-  :: String -> Params -> (Int, Int, Int) -> Array5 Float -> IO (Array5 Float)
-
-conv3d_sep_norm tag
-  (Conv3dSepNorm
-    aCKrn aCBia _ _ _ _ aCScale aCBias
-    aPKrn aPBia _ _ _ _ aPScale aPBias)
-  (nPadLay, nPadRow, nPadCol)
-  arrA
-  = do  let reshape_5_3 (Array (Shape5 nImg nCha nDep nRow nCol) v) =
-                Array (Shape3 nImg nCha (nDep * nRow * nCol)) v
-        let aCconv    = Conv.conv3d_chan  (nPadLay, nPadRow, nPadCol) aCKrn aCBia arrA
-        let aCnorm    = Norm.batchnorm    aCScale   aCBias (reshape_5_3 aCconv)
-        let aC        = Actv.relu         aCnorm
-        let aPconv    = Conv.conv3d_point (0, 0, 0) aPKrn aPBia  (reshape (shape aCconv) aC)
-        let aPnorm    = Norm.batchnorm    aPScale   aPBias (reshape_5_3 aPconv)
-        let aP        = Actv.relu         aPnorm
-        let arrB      = reshape (shape aPconv) aP
-
-        let aResult   = Conv.conv3d_chan (0, 1, 1) aCKrn aCBia arrA
-        let aPatchOut = slicez5 aResult (Index5 0 0 0 100 100) (Index5 1 1 1 1 1)
-
-        let aPatchIn  = slicez5 arrA  (Index5 0 0 0 99 99) (Index5 1 1 1 3 3)
-        let aKrn1     = slicez5 aCKrn (Index5 0 0 0 0 0) (Index5 1 1 1 3 3)
-        let aBia1     = index1 aCBia (Index1 0)
-        let aAgain    = dot aPatchIn aKrn1 + aBia1
-
-        dumpNormTurbo5 (reshape (shape aCconv) aC) "output" (tag ++ "-c")
-        dumpNormTurbo5 (reshape (shape aPconv) aP) "output" (tag ++ "-p")
-
-        return arrB
-
-pool :: Array5 Float -> Array5 Float
-pool arr = unsqueeze5 $ Pool.maxpool (2, 2) False $ squeeze5 arr
 
