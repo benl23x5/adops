@@ -18,7 +18,7 @@ batchnorm
  :: Array1 Float -> Array1 Float
  -> Array3 Float -> Array3 Float
 batchnorm aScale aBias aInput =
-  build3 (shape aInput) $ \ix@(Index3 iCha iRow iCol) ->
+  build3 (shape aInput) $ \ix@(Index3 iImg iCha iElem) ->
     let input = index3 aInput ix
         scale = index1 aScale (Index1 iCha)
         bias  = index1 aBias  (Index1 iCha)
@@ -33,11 +33,11 @@ batchnorm_params
 batchnorm_params aGamma aBeta aMean aVar eps =
   let Shape1 nCha = shape aGamma
       build f =
-        build1 (Shape1 nCha) $ \cha ->
-          let gamma = index1 aGamma cha
-              beta  = index1 aBeta  cha
-              mean  = index1 aMean  cha
-              var   = index1 aVar   cha
+        build1 (Shape1 nCha) $ \iCha ->
+          let gamma = index1 aGamma iCha
+              beta  = index1 aBeta  iCha
+              mean  = index1 aMean  iCha
+              var   = index1 aVar   iCha
               sd    = sqrt (var + eps)
           in  f gamma beta mean sd
       scale gamma _ _ sd =
