@@ -344,7 +344,6 @@ instance IsShape Shape5 where
   && i4 >= 0 && i4 < s4
 
  toLinear (Shape5 _ s3 s2 s1 s0) (Shape5 i4 i3 i2 i1 i0)
-  -- (((i4 * s3 + i3) * s2 + i2) * s1 + i1) * s0 + i0
   = let p0 = s0
         p1 = s1 * p0
         p2 = s2 * p1

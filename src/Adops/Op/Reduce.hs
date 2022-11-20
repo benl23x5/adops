@@ -8,3 +8,4 @@ max
   => Array sh a -> a
 max (Array _ u) =
   U.maximum u
+{-# INLINE max #-}

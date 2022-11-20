@@ -39,6 +39,7 @@ costVolume iStart count arrL arrR
                         indexz4 arrR (Index4 iImg iCha iRow iSrc)
 
         in sumAll (aabs (arrVecL -. arrVecR))
+{-# INLINE costVolume #-}
 
 
 -- | Disparity regression.
@@ -79,4 +80,3 @@ regression arr
                      index4 arr (Index4 iImg iCha iRow iCol)
             aNeg = mapAll (\x -> x * (-1)) aVec
         in  sumAll (aKs *. softmax aNeg)
-
