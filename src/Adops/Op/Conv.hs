@@ -3,7 +3,7 @@ module Adops.Op.Conv where
 import Adops.Array
 import Debug.Trace
 
--- | Unpadded full convolution,
+-- | Full convolution,
 --   where the output size is the same as the input size.
 conv2d
  :: (Elem a, Num a)
@@ -21,7 +21,7 @@ conv2d arrK arrA
         in  dot arrAt arrKt
 
 
--- | Padded full convolution,
+-- | Full convolution with custom padding,
 --   where the output size depends on the input size and kernel size.
 conv2d_pad
  :: (Elem a, Num a)
@@ -42,8 +42,8 @@ conv2d_pad (nPh, nPw) arrK arrA
             arrKt = slicez4 arrK (Index4 iCout 0 0   0)   shK1
         in  dot arrAt arrKt
 
--- | Padded full convolution with unit stride over the volumetric dimensions
---   of a rank-5 array in NCDHW order.
+-- | Full convolution with custom padding and unit stride,
+--   over the volumetric dimensions of a rank-5 array in NCDHW order.
 --
 conv3d_pad
   :: (Elem a, Num a)
@@ -67,9 +67,8 @@ conv3d_pad (nPd, nPh, nPw) arrK arrA
         in  dot arrAt arrKt
 
 
--- | Padded channel-wise convolution with unit stride over the volumetric
---   dimensions of a rank-5 array in NCDHW order. This is the first part of a
---   separable convolution.
+-- | Channel-wise convolution with custom padding and unit stride,
+--   over the volumetric dimensions of a rank-5 array in NCDHW order.
 --
 conv3d_chan
   :: (Elem a, Num a, Show a)
@@ -93,9 +92,8 @@ conv3d_chan (nPd, nPh, nPw) arrK arrB arrA
         in  dot arrAt arrKt + index1 arrB (Index1 iCout)
 {-# INLINE conv3d_chan #-}
 
--- | Padded point-wise convolution with unit stride over the volumetric
---   dimensions of a rank-5 array in NCDHW order. This is the second part of a
---   separable convolution.
+-- | Point-wise convolution with custom padding and unit stride,
+--   over the volumetric dimensions of a rank-5 array in NCDHW order.
 --
 conv3d_point
   :: (Elem a, Num a)
@@ -121,21 +119,45 @@ conv3d_point (nPd, nPh, nPw) arrK arrB arrA
 
 
 --------------------------------------------------------------------------------
--- | Derivative of unpadded full convolution with respect to the input image.
---
+-- | Derivative with respect to input, for the full convolution
+--   where the output size is the same as the input size.
 conv2d_dInp
  :: (Elem a, Num a)
  => Array4 a -> Array4 a -> Array4 a
 
 conv2d_dInp arrK arrB
- = let  Shape4 nBimg nBchan nBh nBw = shape arrB
-        Shape4 nKimg nKchan nKh nKw = shape arrK
+ = let  Shape4 nImgs  nCoutB nBh nBw = shape arrB
+        Shape4 nCoutK nKchan nKh nKw = shape arrK
+        nCout   = same nCoutB nCoutK
         nCinp   = nKchan
-        nImgs   = same nBchan nKimg
         shA     = Shape4 nImgs nCinp nBh nBw
-        shK1    = Shape4 1     nCinp nKh nKw
+        shB1    = Shape4 1     1     nAh nAw
+        sh1     = Shape1 nCout
    in   build4 shA $ \(Index4 iImg iCinp iAh iAw) ->
-        let arrBt = slicez4 arrB (Index4 iImg  0 iAh iAw) shK1
-            arrKt = slicez4 arrK (Index4 iCinp 0 0   0)   shK1
-        in  dot arrBt arrKt
+          sum $ build1 sh1 $ \(Index1 iCout) ->
+            let iA = Index4 iImg  iCout  (iAh - nKh + 1) (iAw - nKw + 1)
+                iK = Index4 0     iCinp  0               0
+                arrBt = slicez4 arrB iA shB1
+                arrKt = slicez4 arrK iK shB1
+            in  dot arrBt arrKt
 
+-- | Derivative with respect to kernels, for the full convolution
+--   where the output size is the same as the input size.
+--
+conv2d_Krn
+ :: (Elem a, Num a)
+ => Shape4 -> Array4 a -> Array4 a -> Array4 a
+
+conv2d_dKrn shK arrA arrB
+ = let  Shape4 nCoutK nCinpK nAchan nKh nKw = shK
+        Shape4 nImgB  nCout  nBh nBw = shape arrB
+        Shape4 nImgA  nCinpA _   _   = shape arrA
+        nImgs   = same nImgA  nImgB
+        nCinp   = same nCinpA nCinpK
+        shB1    = Shape4 1 1 nBh nBw
+        sh1     = Shape1 nImgs
+   in   build4 shK $ \(Index4 iCout iCinp iKh iKw) ->
+          sum $ build1 (Shape1 nImgs) $ \(Index1 iImg) ->
+              let arrBt = slicez4 arrB (Index4 iImg  iCout  0   0  ) shB1
+                  arrAt = slicez4 arrA (Index4 iImg  iCinp  iKh iKw) shB1
+              in  dot arrBt arrBt
