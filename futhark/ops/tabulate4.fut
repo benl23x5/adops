@@ -5,11 +5,9 @@ def main : [100][100][100][100]i64
    tabulate 100 (\i2 ->
    tabulate 100 (\i3 -> i0 * i1 * i2 * i3))))
 
--- futhark dev --gpu tabulate4.fut > dump/tabulate4.txt
--- ------------------------------------------------------------------
--- types {
---
--- }
+
+-- $ futhark dev --gpu tabulate4.fut > dump/tabulate4.txt
+-- ------------------------------------------------------------------------------------------------
 --
 -- let {segmap_group_size_7777 : i64} =
 --   get_size(segmap_group_size_7587, group_size)
