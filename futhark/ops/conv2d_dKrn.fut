@@ -98,11 +98,11 @@ def fill4
   : [n][c][h][w]f32
   = unflatten_4d n c h w (replicate (n * c * h * w) (value : f32))
 
-def nImg_1  : i64 = 8
-def nCinp_1 : i64 = 3
-def nAh_1   : i64 = 512
-def nAw_1   : i64 = 1024
-def nCout_1 : i64 = 64
+def nImg_1  : i64 = 1
+def nCinp_1 : i64 = 2
+def nAh_1   : i64 = 32
+def nAw_1   : i64 = 32
+def nCout_1 : i64 = 4
 def nKh_1   : i64 = 3
 def nKw_1   : i64 = 3
 
@@ -118,6 +118,9 @@ def test_1_impl =
   let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
   let dK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = conv2d_dKrn_impl aA aO
   in  dK
+
+def test1 =
+  test_1_ad == test_1_impl
 
 def main
     [nAi][nAc][nAh][nAw]

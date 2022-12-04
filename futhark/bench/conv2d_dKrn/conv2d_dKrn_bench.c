@@ -8,9 +8,11 @@
 #include <assert.h>
 #include <sys/time.h>
 
-#include "index4.h"
+#include "../index4.h"
 #include "conv2d_dKrn.h"
 
+#define millisecs_elapsed(s,e) \
+  (((e.tv_sec - s.tv_sec) * 1000.0) + ((e.tv_usec - s.tv_usec) / 1000.0))
 
 index4_t sizes_conv2d_dKrn_arrA[] =
  { {   1,   2,  32,   32}
@@ -38,17 +40,15 @@ index4_t sizes_conv2d_dKrn_arrO[] =
 
 
 int main(int argc, char** argv) {
-  struct futhark_context_config *cfg =
-    futhark_context_config_new();
-
-  struct futhark_context *ctx =
-    futhark_context_new(cfg);
-
   for (int i = 0; sizes_conv2d_dKrn_arrA[i].img != 0; i++) {
-    index4_t                     arrA_size,  arrK_size,  arrO_size;
-    float                       *arrA_data, *arrK_data, *arrO_data;
-    struct futhark_f32_4d  *dK, *arrA,      *arrK,      *arrO;
-    struct timeval         t_start, t_end;
+    struct futhark_context_config *cfg = futhark_context_config_new();
+    struct futhark_context        *ctx = futhark_context_new(cfg);
+
+    index4_t                arrA_size,  arrK_size,  arrO_size;
+    float                  *arrA_data, *arrK_data, *arrO_data;
+    struct futhark_f32_4d  *arrA,      *arrK,      *arrO;
+    struct futhark_f32_4d  *dK;
+    struct timeval t_start, t_end;
 
     arrA_size   = sizes_conv2d_dKrn_arrA[i];
     arrK_size   = sizes_conv2d_dKrn_arrK[i];
@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
       arrA_size.cha,
       arrA_size.row,
       arrA_size.col);
+    assert(arrA != NULL);
 
     arrK = futhark_new_f32_4d(
       ctx,
@@ -73,6 +74,7 @@ int main(int argc, char** argv) {
       arrK_size.cha,
       arrK_size.row,
       arrK_size.col);
+    assert(arrA != NULL);
 
     arrO = futhark_new_f32_4d(
       ctx,
@@ -81,24 +83,24 @@ int main(int argc, char** argv) {
       arrO_size.cha,
       arrO_size.row,
       arrO_size.col);
+    assert(arrA != NULL);
 
-    printf("starting futhark bench #%d...\n", i);
     gettimeofday(&t_start, NULL);
-    futhark_entry_conv2d_dKrn(
+    int err = futhark_entry_conv2d_dKrn(
       ctx, &dK,
       (const struct futhark_f32_4d*)arrA,
       (const struct futhark_f32_4d*)arrK,
       (const struct futhark_f32_4d*)arrO);
-    gettimeofday(&t_end, NULL);
 
-    float t_diff =
-      ((t_end.  tv_sec * 1000000 + t_end.  tv_usec) -
-       (t_start.tv_sec * 1000000 + t_start.tv_usec)) / 1000000.0;
-
-    printf("%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%10.0f\n"
-          , arrA_size.img, arrA_size.cha, arrA_size.row, arrA_size.col
-          , arrK_size.img, arrK_size.cha, arrK_size.row, arrK_size.col
-          , t_diff);
+    if (err) {
+      printf("%s\n", futhark_context_get_error(ctx));
+    } else {
+      gettimeofday(&t_end, NULL);
+      printf("%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%6zu,%10.0f\n"
+            , arrA_size.img, arrA_size.cha, arrA_size.row, arrA_size.col
+            , arrK_size.img, arrK_size.cha, arrK_size.row, arrK_size.col
+            , millisecs_elapsed(t_start, t_end));
+    }
 
     futhark_free_f32_4d(ctx, arrA);
     futhark_free_f32_4d(ctx, arrK);
@@ -107,8 +109,11 @@ int main(int argc, char** argv) {
     free(arrA_data);
     free(arrK_data);
     free(arrO_data);
+
+    futhark_context_free(ctx);
+    futhark_context_config_free(cfg);
+
+    assert(err == FUTHARK_SUCCESS);
   }
 
-  futhark_context_free(ctx);
-  futhark_context_config_free(cfg);
 }
