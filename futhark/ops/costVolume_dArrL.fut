@@ -1,5 +1,5 @@
-open import "/prelude/math"
 
+open import "/prelude/math"
 
 def tabulate_4d
     (nN: i64)(nC: i64)(nH: i64)(nW: i64)
