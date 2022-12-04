@@ -89,7 +89,8 @@ def conv2d_dKrn_impl
 -- There is a 'futhark bench' that lets us run benchmarking stanzas:
 -- https://futhark-lang.org/examples/benchmarking.html
 -- But I can't see a way to "quasiquote" test inputs. It seems to want
--- only literals.
+-- only literals. Instead compile this file as a library and use the C
+-- wrapper to grind it.
 
 def fill4
     [n][c][h][w]
@@ -117,14 +118,6 @@ def test_1_impl =
   let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
   let dK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = conv2d_dKrn_impl aA aO
   in  dK
-
-
--- ------------------------------------------------------------------------------------------------
-
-def compare_1
- = let ad   = test_1_ad
-   let impl = test_1_impl
-   in ad == impl
 
 def main
     [nAi][nAc][nAh][nAw]
