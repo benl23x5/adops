@@ -15,40 +15,48 @@
   (((e.tv_sec - s.tv_sec) * 1000.0) + ((e.tv_usec - s.tv_usec) / 1000.0))
 
 index4_t sizes_conv2d_dKrn_arrA[] =
- { {   1,   2,  32,   32}
- , {   2,   4,  32,   32}
- , {   4,  16,  32,   32}
- , {  16,  32,  32,   32}
- , {  32,  64,  32,   32}
- , {   0,   0,   0,    0} };
+ { {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   0,   0,    0,    0} };
 
 index4_t sizes_conv2d_dKrn_arrK[] =
- { {   4,   2,   3,    3}
- , {  16,   4,   3,    3}
- , {  64,  16,   3,    3}
- , { 128,  32,   3,    3}
- , { 256,  64,   3,    3}
- , {   0,   0,   0,    0} };
+ { {   1,   4,    3,    3}
+ , {   4,   4,    3,    3}
+ , {  16,   4,    3,    3}
+ , {  32,   4,    3,    3}
+ , {  64,   4,    3,    3}
+ , { 128,   4,    3,    3}
+ , {   0,   0,    0,    0} };
 
 index4_t sizes_conv2d_dKrn_arrO[] =
- { {   1,   4,  32,   32}
- , {   2,  16,  32,   32}
- , {   4,  64,  32,   32}
- , {  16, 128,  32,   32}
- , {  32, 256,  32,   32}
- , {   0,   0,   0,    0} };
+ { {   4,   1,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,  16,  128,  512}
+ , {   4,  32,  128,  512}
+ , {   4,  64,  128,  512}
+ , {   4, 128,  128,  512}
+ , {   0,   0,    0,    0} };
 
 
 int main(int argc, char** argv) {
   for (int i = 0; sizes_conv2d_dKrn_arrA[i].img != 0; i++) {
+    assert(argc == 2);
+    char* entry = argv[1];
+
     struct futhark_context_config *cfg = futhark_context_config_new();
     struct futhark_context        *ctx = futhark_context_new(cfg);
 
     index4_t                arrA_size,  arrK_size,  arrO_size;
     float                  *arrA_data, *arrK_data, *arrO_data;
     struct futhark_f32_4d  *arrA,      *arrK,      *arrO;
-    struct futhark_f32_4d  *dK;
+    struct futhark_f32_1d  *dK;
+
     struct timeval t_start, t_end;
+    int err;
 
     arrA_size   = sizes_conv2d_dKrn_arrA[i];
     arrK_size   = sizes_conv2d_dKrn_arrK[i];
@@ -86,11 +94,19 @@ int main(int argc, char** argv) {
     assert(arrA != NULL);
 
     gettimeofday(&t_start, NULL);
-    int err = futhark_entry_conv2d_dKrn(
-      ctx, &dK,
-      (const struct futhark_f32_4d*)arrA,
-      (const struct futhark_f32_4d*)arrK,
-      (const struct futhark_f32_4d*)arrO);
+    if (!strcmp(entry, "ad")) {
+      err = futhark_entry_conv2d_dKrn_flat(
+        ctx, &dK,
+        (const struct futhark_f32_4d*)arrA,
+        (const struct futhark_f32_4d*)arrK,
+        (const struct futhark_f32_4d*)arrO);
+    } else if (!strcmp(entry, "impl")) {
+      err = futhark_entry_conv2d_dKrn_impl_flat(
+        ctx, &dK,
+        (const struct futhark_f32_4d*)arrA,
+        (const struct futhark_f32_4d*)arrK,
+        (const struct futhark_f32_4d*)arrO);
+    }
 
     if (err) {
       printf("%s\n", futhark_context_get_error(ctx));

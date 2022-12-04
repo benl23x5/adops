@@ -22,6 +22,33 @@ def slice4
     start.3 : start.3 + nKw] :> [nKi][nKc][nKh][nKw]f32
 
 
+def indexz4
+    [nN][nC][nH][nW]
+    (iN: i64) (iC: i64) (iH: i64) (iW: i64)
+    (a: [nN][nC][nH][nW]f32)
+  :  f32
+  = if   iN < nN && iC < nC && iH < nH && iW < nW
+    then a[iN, iC, iH, iW]
+    else 0
+
+
+def slicez4
+    [nAi][nAc][nAh][nAw]
+    (nKi: i64) (nKc: i64) (nKh: i64) (nKw: i64)
+    (arrA:  [nAi][nAc][nAh][nAw]f32)
+    (start: (i64, i64, i64, i64))
+ :  ([nKi][nKc][nKh][nKw]f32)
+ = tabulate nKi (\iN ->
+    tabulate nKc (\iC ->
+     tabulate nKh (\iH ->
+      tabulate nKw (\iW ->
+        let oN = start.0 + iN
+        let oC = start.1 + iC
+        let oH = start.2 + iH
+        let oW = start.3 + iW
+        in  indexz4 oN oC oH oW arrA))))
+
+
 def mmap4
     [nN][nC][nH][nW]
     (f: f32 -> f32 -> f32)
@@ -55,8 +82,8 @@ def conv2d
     (arrK: [nBc][nAc][nKh][nKw]f32)
  : ([nAi][nBc][nBh][nBw]f32)
  = tabulate_4d nAi nBc nBh nBw (\iImg iCout iBh iBw ->
-        let arrAt = slice4 1 nAc nKh nKw arrA (iImg,  0, iBh, iBw)
-        let arrKt = slice4 1 nAc nKh nKw arrK (iCout, 0,   0,   0)
+        let arrAt = slicez4 1 nAc nKh nKw arrA (iImg,  0, iBh, iBw)
+        let arrKt = slicez4 1 nAc nKh nKw arrK (iCout, 0,   0,   0)
         in  dot4 arrAt arrKt)
 
 
@@ -80,10 +107,9 @@ def conv2d_dKrn_impl
  : ([nBc][nAc][nKh][nKw]f32)
  = tabulate_4d nBc nAc nKh nKw (\iCout iCinp iKh iKw ->
     sum (tabulate nAi (\iImg ->
-      let arrOt = slice4 1 1 nBh nBw arrO (iImg, iCout, 0,   0)
-      let arrAt = slice4 1 1 nBh nBw arrA (iImg, iCinp, iKh, iKw)
+      let arrOt = slicez4 1 1 nBh nBw arrO (iImg, iCout, 0,   0)
+      let arrAt = slicez4 1 1 nBh nBw arrA (iImg, iCinp, iKh, iKw)
       in  dot4 arrOt arrAt)))
-
 
 -- ------------------------------------------------------------------------------------------------
 -- There is a 'futhark bench' that lets us run benchmarking stanzas:
@@ -91,6 +117,34 @@ def conv2d_dKrn_impl
 -- But I can't see a way to "quasiquote" test inputs. It seems to want
 -- only literals. Instead compile this file as a library and use the C
 -- wrapper to grind it.
+
+-- Wrap the derivatives in a flatten because futhark doesn't allow me to use
+-- conv2d_dKrn_impl as an entry point. It says:
+-- > Entry point functions must not be size-polymorphic in their return type.
+-- However it was ok with conv2d_dkrn as an entry point. I assume the ad
+-- transform did the magic.
+
+def conv2d_dKrn_flat
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : []f32
+ = flatten_4d (conv2d_dKrn arrA arrK arrO)
+
+def conv2d_dKrn_impl_flat
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : []f32
+ = let dK: [nBc][nAc][nKh][nKw]f32 = conv2d_dKrn_impl arrA arrO
+   in  flatten_4d dK
+
 
 def fill4
     [n][c][h][w]

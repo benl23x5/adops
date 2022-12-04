@@ -1,8 +1,11 @@
 # Benchmark Futhark AD vs. Custom Implementation for conv2d_dKrn
 
-## Something is Broken.
+## Unpadded Slices
 
-Compile `conv2d_dKrn.fut` as an executable with baked-in input sizes works.
+There is some disparencies between running our Futhark conv2d as an executable
+and as a library.
+
+Compile `conv2d_dKrn.fut` as an executable with baked-in input sizes: works.
 
 - `slice4` doesn't do any padding and can go out of bounds, unlike in adops.
 - `slice4` is used in both `conv2d_dKrn` and `conv2d_dKrn_impl`.
@@ -17,7 +20,7 @@ Compile `conv2d_dKrn.fut` as an executable with baked-in input sizes works.
   true
   ```
 
-Compile `conv2d_dKrn.fut` as a library and run with C wrapper failed.
+Compile `conv2d_dKrn.fut` as a library and run with a C wrapper: failed (with the same input sizes.)
 
 ```
 $ make && ./conv2d_dKrn_bench
@@ -29,3 +32,9 @@ Backtrace:
 -> #0  ../../ops/conv2d_dKrn.fut:18:4-22:28
    #1  ../../ops/conv2d_dKrn.fut:63:1-71:30
 ```
+
+## Padded Slices
+
+Replaced `slice4` with `slicez4` -- a very slow padded slice with a conditional
+on every index. As it is used in both the AD `dKrn` and the custom
+implementation, the benchmark is still valid.
