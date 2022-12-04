@@ -160,4 +160,4 @@ conv2d_dKrn shK arrA arrB
           sum $ build1 (Shape1 nImgs) $ \(Index1 iImg) ->
               let arrBt = slicez4 arrB (Index4 iImg  iCout  0   0  ) shB1
                   arrAt = slicez4 arrA (Index4 iImg  iCinp  iKh iKw) shB1
-              in  dot arrBt arrBt
+              in  dot arrBt arrAt

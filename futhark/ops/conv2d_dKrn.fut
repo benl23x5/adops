@@ -43,6 +43,10 @@ def dot4
     (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
 
 
+def sum(xs: []f32): f32
+ = reduce (+) 0 xs
+
+
 def conv2d
     [nAi][nAc][nAh][nAw]
     [nBc][nKh][nKw]
@@ -66,6 +70,61 @@ def conv2d_dKrn
  : ([nBc][nAc][nKh][nKw]f32)
  = vjp (conv2d arrA) arrK arrO
 
+
+def conv2d_dKrn_impl
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : ([nBc][nAc][nKh][nKw]f32)
+ = tabulate_4d nBc nAc nKh nKw (\iCout iCinp iKh iKw ->
+    sum (tabulate nAi (\iImg ->
+      let arrOt = slice4 1 1 nBh nBw arrO (iImg, iCout, 0,   0)
+      let arrAt = slice4 1 1 nBh nBw arrA (iImg, iCinp, iKh, iKw)
+      in  dot4 arrOt arrAt)))
+
+
+-- ------------------------------------------------------------------------------------------------
+-- There is a 'futhark bench' that lets us run benchmarking stanzas:
+-- https://futhark-lang.org/examples/benchmarking.html
+-- But I can't see a way to "quasiquote" test inputs. It seems to want
+-- only literals.
+
+def fill4
+    [n][c][h][w]
+    (value: f32)
+  : [n][c][h][w]f32
+  = unflatten_4d n c h w (replicate (n * c * h * w) (value : f32))
+
+def nImg_1  : i64 = 8
+def nCinp_1 : i64 = 3
+def nAh_1   : i64 = 512
+def nAw_1   : i64 = 1024
+def nCout_1 : i64 = 64
+def nKh_1   : i64 = 3
+def nKw_1   : i64 = 3
+
+def test_1_ad =
+  let aA : [nImg_1] [nCinp_1][nAh_1][nAw_1]f32 = fill4 0.5
+  let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
+  let aK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = fill4 0.1
+  let dK = conv2d_dKrn aA aK aO
+  in  dK
+
+def test_1_impl =
+  let aA : [nImg_1] [nCinp_1][nAh_1][nAw_1]f32 = fill4 0.5
+  let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
+  let dK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = conv2d_dKrn_impl aA aO
+  in  dK
+
+
+-- ------------------------------------------------------------------------------------------------
+
+def compare_1
+ = let ad   = test_1_ad
+   let impl = test_1_impl
+   in ad == impl
 
 def main
     [nAi][nAc][nAh][nAw]
