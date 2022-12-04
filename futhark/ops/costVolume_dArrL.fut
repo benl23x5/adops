@@ -38,11 +38,13 @@ def costVolume_dArrR
 
 
 def main
-    (arrA: [1] [8][16][32]f32)
-    (arrB: [1] [8][16][32]f32)
-    (arrO: [1][12][16][32]f32)
- : [1][8][16][32]f32
- = costVolume_dArrR 0 12 arrA arrB arrO
+    [nImgs][nChas][nRows][nCols]
+    (nCount: i64)
+    (arrA: [nImgs][nChas][nRows][nCols]f32)
+    (arrB: [nImgs][nChas][nRows][nCols]f32)
+    (arrO: [nImgs][nCount][nRows][nCols]f32)
+ : [nImgs][nChas][nRows][nCols]f32
+ = costVolume_dArrR 0 nCount arrA arrB arrO
 
 
 
@@ -158,5 +160,87 @@ def main
 --               in {map_adjs_13352})
 --       in {map_adjs_13353})
 --   in {withhacc_res_13125}
+-- }
+--
+
+
+
+-- $ futhark dev --type-check --inline-aggressively --ad --fuse-soacs --inline-aggressively --gpu costVolume_dArrL.fut > dump/costVolume_dArrL.txt
+-- ------------------------------------------------------------------------------------------------
+-- entry("main",
+--       {nCount: i64,
+--        arrA: [][][][]f32,
+--        arrB: [][][][]f32,
+--        arrO: [][][][]f32},
+--       {[][][][]f32})
+--   entry_main (nImgs_10633 : i64,
+--               nChas_10634 : i64,
+--               nRows_10635 : i64,
+--               nCols_10636 : i64,
+--               nCount_10637 : i64,
+--               arrA_10638 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32,
+--               arrB_10639 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32,
+--               arrO_10640 : [nImgs_10633][nCount_10637][nRows_10635][nCols_10636]f32)
+--   : {[nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32} = {
+--   let {zeroes__12801 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32} =
+--     #[sequential]
+--     replicate([nImgs_10633][nChas_10634][nRows_10635][nCols_10636], 0.0f32)
+--   let {y_14446 : i64}         = mul_nw64(nChas_10634, nCols_10636)
+--   let {y_14447 : i64}         = mul_nw64(nRows_10635, y_14446)
+--   let {y_14448 : i64}         = mul_nw64(nCount_10637, y_14447)
+--   let {nest_size_14449 : i64} = mul_nw64(nImgs_10633, y_14448)
+--   let {segmap_group_size_14450 : i64} =
+--     get_size(segmap_group_size_13934, group_size)
+--   let {num_groups_14451 : i64} =
+--     calc_num_groups(nest_size_14449, segmap_num_groups_13936, segmap_group_size_14450)
+--   let {arrA_coalesced_14536 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32} =
+--     manifest((0, 2, 3, 1), arrA_10638)
+--   let {arrB_coalesced_14537 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32} =
+--     manifest((0, 2, 3, 1), arrB_10639)
+--   let {withhacc_res_13492 : [nImgs_10633][nChas_10634][nRows_10635][nCols_10636]f32} =
+--     with_acc({([nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {zeroes__12801},
+--               (\ {idx_12805 : i64, idx_12806 : i64, idx_12807 : i64, idx_12808 : i64, x_12802 : f32, y_12803 : f32}
+--                 : {f32} ->
+--                 let {binlam_res_12804 : f32} = fadd32(x_12802, y_12803)
+--                 in {binlam_res_12804},
+--               {0.0f32}))},
+--     \ {acc_cert_p_12819 : unit, acc_p_12820 : acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})}
+--       : {acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})} ->
+--       let {map_adjs_14453 : acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})} =
+--         segmap(thread; virtualise; groups=num_groups_14451; groupsize=segmap_group_size_14450)
+--         (gtid_14454 < nImgs_10633, gtid_14455 < nCount_10637, gtid_14456 < nRows_10635, gtid_14457 < nCols_10636, gtid_14458 < nChas_10634) (~phys_tid_14459) : {acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})} {
+--           let {map_adj_p_14463 : f32}      = arrO_10640[gtid_14454, gtid_14455, gtid_14456, gtid_14457]
+--           let {index_primexp_14516 : i64}  = sub64(gtid_14457, gtid_14455)
+--           let {index_primexp_14511 : bool} = sle64(0i64, index_primexp_14516)
+--           let {binop_x_14532 : bool}       = slt64(index_primexp_14516, nCols_10636)
+--           let {index_primexp_14535 : bool} = logand(index_primexp_14511, binop_x_14532)
+--           let {defunc_0_f_res_14475 : f32} = arrA_coalesced_14536[gtid_14454, gtid_14458, gtid_14456, gtid_14457]
+--           let {defunc_0_f_res_14476 : f32} =
+--             if  index_primexp_14511
+--             then {
+--               let {index_certs_14478 : unit} =
+--                 assert(index_primexp_14535, {"Index [", gtid_14454 : i64, ", ", gtid_14458 : i64, ", ", gtid_14456 : i64, ", ", index_primexp_14516 : i64, "] out of bounds for array of shape [", nImgs_10633 : i64, "][", nChas_10634 : i64, "][", nRows_10635 : i64, "][", nCols_10636 : i64, "]."}, "costVolume_dArrL.fut:25:35-62")
+--               let {defunc_0_f_res_t_res_14479 : f32} =
+--                 #{index_certs_14478}
+--                 arrB_coalesced_14537[gtid_14454, gtid_14458, gtid_14456, index_primexp_14516]
+--               in {defunc_0_f_res_t_res_14479}
+--             } else {0.0f32}
+--             : {f32}
+--           let {abs_arg_14480 : f32}        = fsub32(defunc_0_f_res_14475, defunc_0_f_res_14476)
+--           let {binop_y_14481 : f32}        = fsignum32 abs_arg_14480
+--           let {contrib_14482 : f32}        = fmul32(map_adj_p_14463, binop_y_14481)
+--           let {binop_y_adj_14483 : f32}    = fmul32(-1.0f32, contrib_14482)
+--           let {branch_adj_14484 : acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})} =
+--             if  index_primexp_14511
+--             then {
+--               let {free_adj_p_14485 : acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})} =
+--                 update_acc(acc_p_12820, {gtid_14454, gtid_14458, gtid_14456, index_primexp_14516}, {binop_y_adj_14483})
+--               in {free_adj_p_14485}
+--             } else {acc_p_12820}
+--             : {acc(acc_cert_p_12819, [nImgs_10633][nChas_10634][nRows_10635][nCols_10636], {f32})}
+--           return {returns branch_adj_14484}
+--         }
+--       in {map_adjs_14453})
+--   in {withhacc_res_13492}
 -- }
 --

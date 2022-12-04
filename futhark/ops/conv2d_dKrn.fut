@@ -39,7 +39,8 @@ def dot4
     (arrA: [nN][nC][nH][nW]f32)
     (arrB: [nN][nC][nH][nW]f32)
  : f32
- = reduce (\x y -> x + y) 0 (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
+ = reduce (\x y -> x + y) 0
+    (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
 
 
 def conv2d
@@ -67,12 +68,14 @@ def conv2d_dKrn
 
 
 def main
-    (arrA: [1][4][16][32]f32)
-    (arrK: [4][4][3][3]f32)
-    (arrO: [1][4][16][32]f32)
- : [4][4][3][3]f32
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : [nBc][nAc][nKh][nKw]f32
  = conv2d_dKrn arrA arrK arrO
-
 
 
 -- $ futhark dev --type-check --inline-aggressively --ad conv2d_dKrn.fut > dump/conv2d_dKrn.txt
@@ -337,4 +340,238 @@ def main
 --   in {defunc_10_vjp2_res_15170}
 -- }
 --
+--
+
+
+
+
+
+
+-- $ futhark dev --type-check --inline-aggressively --ad --gpu conv2d_dKrn.fut > dump/conv2d_dKrn.txt
+-- ------------------------------------------------------------------------------------------------
+-- entry("main",
+--       {arrA: [][][][]f32,
+--        arrK: [][][][]f32,
+--        arrO: [][][][]f32},
+--       {[][][][]f32})
+--   entry_main (nAi_11024 : i64,
+--               nAc_11025 : i64,
+--               nAh_11026 : i64,
+--               nAw_11027 : i64,
+--               nBc_11028 : i64,
+--               nKh_11029 : i64,
+--               nKw_11030 : i64,
+--               nBh_11031 : i64,
+--               nBw_11032 : i64,
+--               arrA_11033 : [nAi_11024][nAc_11025][nAh_11026][nAw_11027]f32,
+--               arrK_11034 : [nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32,
+--               arrO_11035 : [nAi_11024][nBc_11028][nBh_11031][nBw_11032]f32)
+--   : {[nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} = {
+--   let {empty_slice_15171 : bool} = eq_i64(nAc_11025, 0i64)
+--   let {m_15172 : i64} = sub64(nAc_11025, 1i64)
+--   let {zero_leq_i_p_m_t_s_15173 : bool} = sle64(0i64, m_15172)
+--   let {i_p_m_t_s_leq_w_15174 : bool} = slt64(m_15172, nAc_11025)
+--   let {i_lte_j_15175 : bool} = sle64(0i64, nAc_11025)
+--   let {y_15176 : bool} = logand(zero_leq_i_p_m_t_s_15173, i_p_m_t_s_leq_w_15174)
+--   let {y_15177 : bool} = logand(i_lte_j_15175, y_15176)
+--   let {ok_or_empty_15178 : bool} = logor(empty_slice_15171, y_15177)
+--   let {empty_slice_15179 : bool} = eq_i64(nKh_11029, 0i64)
+--   let {m_15180 : i64} = sub64(nKh_11029, 1i64)
+--   let {empty_slice_15181 : bool} = eq_i64(nKw_11030, 0i64)
+--   let {m_15182 : i64} = sub64(nKw_11030, 1i64)
+--   let {zeroes__15401 : [nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--     #[sequential]
+--     replicate([nBc_11028][nAc_11025][nKh_11029][nKw_11030], 0.0f32)
+--   let {y_18135 : i64} = mul_nw64(nBh_11031, nBw_11032)
+--   let {y_18136 : i64} = mul_nw64(nBc_11028, y_18135)
+--   let {nest_size_18137 : i64} = mul_nw64(nAi_11024, y_18136)
+--   let {segmap_group_size_18138 : i64} =
+--     get_size(segmap_group_size_17130, group_size)
+--   let {segmap_usable_groups_18139 : i64} = sdiv_up64(nest_size_18137, segmap_group_size_18138)
+--   let {index_certs_r_r_r_r_18140 : [nAi_11024][nBc_11028][nBh_11031][nBw_11032]unit} =
+--     segmap(thread; ; groups=segmap_usable_groups_18139; groupsize=segmap_group_size_18138)
+--     (gtid_18141 < nAi_11024, gtid_18142 < nBc_11028, gtid_18143 < nBh_11031, gtid_18144 < nBw_11032) (~phys_tid_18145) : {unit} {
+--       let {index_primexp_18345 : i64} = add64(1i64, gtid_18141)
+--       let {index_primexp_18356 : bool} = sle64(gtid_18141, index_primexp_18345)
+--       let {index_primexp_18342 : i64} = add64(nKh_11029, gtid_18143)
+--       let {binop_x_18347 : bool} = sle64(gtid_18143, index_primexp_18342)
+--       let {cmpop_y_18348 : i64} = add64(m_15180, gtid_18143)
+--       let {binop_x_18349 : bool} = sle64(0i64, cmpop_y_18348)
+--       let {binop_y_18351 : bool} = slt64(cmpop_y_18348, nAh_11026)
+--       let {binop_y_18352 : bool} = logand(binop_x_18349, binop_y_18351)
+--       let {binop_y_18353 : bool} = logand(binop_x_18347, binop_y_18352)
+--       let {index_primexp_18354 : bool} = logor(empty_slice_15179, binop_y_18353)
+--       let {j_18153 : i64} = add64(nKw_11030, gtid_18144)
+--       let {i_p_m_t_s_18154 : i64} = add64(m_15182, gtid_18144)
+--       let {zero_leq_i_p_m_t_s_18155 : bool} = sle64(0i64, i_p_m_t_s_18154)
+--       let {i_p_m_t_s_leq_w_18156 : bool} = slt64(i_p_m_t_s_18154, nAw_11027)
+--       let {i_lte_j_18158 : bool} = sle64(gtid_18144, j_18153)
+--       let {y_18160 : bool} = logand(zero_leq_i_p_m_t_s_18155, i_p_m_t_s_leq_w_18156)
+--       let {y_18161 : bool} = logand(i_lte_j_18158, y_18160)
+--       let {ok_or_empty_18163 : bool} = logor(empty_slice_15181, y_18161)
+--       let {y_18164 : bool} = logand(ok_or_empty_18163, index_primexp_18356)
+--       let {y_18165 : bool} = logand(y_18164, index_primexp_18354)
+--       let {index_ok_18166 : bool} = logand(ok_or_empty_15178, y_18165)
+--       let {index_certs_18167 : unit} =
+--         assert(index_ok_18166, {"Index [", gtid_18141 : i64, ":", index_primexp_18345 : i64, ", ", 0i64 : i64, ":", nAc_11025 : i64, ", ", gtid_18143 : i64, ":", index_primexp_18342 : i64, ", ", gtid_18144 : i64, ":", j_18153 : i64, "] out of bounds for array of shape [", nAi_11024 : i64, "][", nAc_11025 : i64, "][", nAh_11026 : i64, "][", nAw_11027 : i64, "]."}, "conv2d_dKrn.fut:18:4-22:28")
+--       return {returns index_certs_18167}
+--     }
+--   let {y_18169 : i64} = mul_nw64(nKh_11029, nKw_11030)
+--   let {y_18170 : i64} = mul_nw64(nAc_11025, y_18169)
+--   let {y_18171 : i64} = mul_nw64(nBw_11032, y_18170)
+--   let {y_18172 : i64} = mul_nw64(nBh_11031, y_18171)
+--   let {y_18173 : i64} = mul_nw64(nBc_11028, y_18172)
+--   let {nest_size_18174 : i64} = mul_nw64(nAi_11024, y_18173)
+--   let {segmap_group_size_18175 : i64} =
+--     get_size(segmap_group_size_17100, group_size)
+--   let {segmap_usable_groups_18176 : i64} = sdiv_up64(nest_size_18174, segmap_group_size_18175)
+--   let {x_r_r_r_r_18177 : [nAi_11024][nBc_11028][nBh_11031][nBw_11032][nAc_11025][nKh_11029][nKw_11030]f32} =
+--     segmap(thread; ; groups=segmap_usable_groups_18176; groupsize=segmap_group_size_18175)
+--     (gtid_18181 < nAi_11024, gtid_18182 < nBc_11028, gtid_18183 < nBh_11031, gtid_18184 < nBw_11032, gtid_slice_18178 < nAc_11025, gtid_slice_18179 < nKh_11029, gtid_slice_18180 < nKw_11030) (~phys_tid_18185) : {f32} {
+--       let {index_certs_18192 : unit} =
+--         index_certs_r_r_r_r_18140[gtid_18181, gtid_18182, gtid_18183, gtid_18184]
+--       let {slice_18193 : i64} = add_nw64(gtid_slice_18179, gtid_18183)
+--       let {slice_18194 : i64} = add_nw64(gtid_slice_18180, gtid_18184)
+--       let {v_18195 : f32} =
+--         #{index_certs_18192}
+--         arrA_11033[gtid_18181, gtid_slice_18178, slice_18193, slice_18194]
+--       return {returns v_18195}
+--     }
+--   let {segmap_group_size_18230 : i64} =
+--     get_size(segmap_group_size_16936, group_size)
+--   let {num_groups_18231 : i64} =
+--     calc_num_groups(nest_size_18174, segmap_num_groups_16938, segmap_group_size_18230)
+--   let {y_18283 : i64} = mul_nw64(nBc_11028, y_18170)
+--   let {nest_size_18284 : i64} = mul_nw64(nAi_11024, y_18283)
+--   let {segmap_group_size_18285 : i64} =
+--     get_size(segmap_group_size_16699, group_size)
+--   let {num_groups_18286 : i64} =
+--     calc_num_groups(nest_size_18284, segmap_num_groups_16701, segmap_group_size_18285)
+--   let {binop_x_18369 : i64} = mul_nw64(nBc_11028, nBh_11031)
+--   let {binop_x_18370 : i64} = mul_nw64(nBw_11032, binop_x_18369)
+--   let {binop_x_18371 : i64} = mul_nw64(nAc_11025, binop_x_18370)
+--   let {binop_x_18372 : i64} = mul_nw64(nKh_11029, binop_x_18371)
+--   let {binop_y_18373 : i64} = mul_nw64(nKw_11030, binop_x_18372)
+--   let {binop_x_18388 : i64} = mul_nw64(nAc_11025, y_18135)
+--   let {binop_x_18389 : i64} = mul_nw64(nKh_11029, binop_x_18388)
+--   let {binop_y_18390 : i64} = mul_nw64(nKw_11030, binop_x_18389)
+--   let {binop_x_18428 : i64} = mul_nw64(nAc_11025, nBw_11032)
+--   let {binop_x_18429 : i64} = mul_nw64(nKh_11029, binop_x_18428)
+--   let {binop_y_18430 : i64} = mul_nw64(nKw_11030, binop_x_18429)
+--   let {binop_x_18514 : i64} = mul_nw64(nAc_11025, nKh_11029)
+--   let {binop_y_18515 : i64} = mul_nw64(nKw_11030, binop_x_18514)
+--   let {binop_x_19764 : i64} = mul_nw64(nAc_11025, nBc_11028)
+--   let {binop_x_19765 : i64} = mul_nw64(nKh_11029, binop_x_19764)
+--   let {binop_y_19766 : i64} = mul_nw64(nKw_11030, binop_x_19765)
+--   let {withhacc_res_16353 : [nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--     with_acc({([nBc_11028][nAc_11025][nKh_11029][nKw_11030], {zeroes__15401},
+--               (\ {idx_15405 : i64, idx_15406 : i64, idx_15407 : i64, idx_15408 : i64, x_15402 : f32, y_15403 : f32}
+--                 : {f32} ->
+--                 let {binlam_res_15404 : f32} = fadd32(x_15402, y_15403)
+--                 in {binlam_res_15404},
+--               {0.0f32}))},
+--     \ {acc_cert_p_15417 : unit, acc_p_15418 : acc(acc_cert_p_15417, [nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})}
+--       : {acc(acc_cert_p_15417, [nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} ->
+--       let {zeroes__r_r_18075 : [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--         replicate([nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], 0.0f32)
+--       let {withhacc_res_r_r_18082 : [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--         with_acc({([nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {zeroes__r_r_18075},
+--                   (\ {idx_18083 : i64, idx_18084 : i64, idx_18085 : i64, idx_18086 : i64, idx_18087 : i64, x_18088 : f32, y_18089 : f32}
+--                     : {f32} ->
+--                     let {binlam_res_18090 : f32} = fadd32(x_18088, y_18089)
+--                     in {binlam_res_18090},
+--                   {0.0f32}))},
+--         \ {acc_cert_p_18091 : unit, acc_p_18092 : acc(acc_cert_p_18091, [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})}
+--           : {acc(acc_cert_p_18091, [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} ->
+--           let {hist_dest_18357 : [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--             replicate([nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], 0.0f32)
+--           let {hist_dest_upd_19745 : [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--             seghist(thread; virtualise; groups=num_groups_18231; groupsize=segmap_group_size_18230)
+--             (gtid_18361 < nest_size_18174) (~phys_tid_18241)
+--             ([nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], 1i64,
+--             {hist_dest_18357},
+--             {0.0f32},
+--             ,
+--             \ {x_18358 : f32, y_18359 : f32}
+--               : {f32} ->
+--               let {binlam_res_18360 : f32} = fadd32(x_18358, y_18359)
+--               in {binlam_res_18360})
+--             : {i64, i64, i64, i64, i64, f32} {
+--               let {binop_x_18379 : i64} = squot64(gtid_18361, binop_y_18373)
+--               let {binop_y_18385 : i64} = mul_nw64(binop_y_18373, binop_x_18379)
+--               let {binop_x_18386 : i64} = sub_nw64(gtid_18361, binop_y_18385)
+--               let {binop_x_18421 : i64} = squot64(binop_x_18386, binop_y_18390)
+--               let {binop_y_18426 : i64} = mul_nw64(binop_y_18390, binop_x_18421)
+--               let {binop_x_18427 : i64} = sub_nw64(binop_x_18386, binop_y_18426)
+--               let {binop_x_18508 : i64} = squot64(binop_x_18427, binop_y_18430)
+--               let {binop_y_18512 : i64} = mul_nw64(binop_y_18430, binop_x_18508)
+--               let {binop_x_18513 : i64} = sub_nw64(binop_x_18427, binop_y_18512)
+--               let {binop_x_18684 : i64} = squot64(binop_x_18513, binop_y_18515)
+--               let {binop_y_18687 : i64} = mul_nw64(binop_y_18515, binop_x_18684)
+--               let {binop_x_18688 : i64} = sub_nw64(binop_x_18513, binop_y_18687)
+--               let {binop_x_19037 : i64} = squot64(binop_x_18688, y_18169)
+--               let {binop_y_19039 : i64} = mul_nw64(y_18169, binop_x_19037)
+--               let {binop_x_19040 : i64} = sub_nw64(binop_x_18688, binop_y_19039)
+--               let {binop_x_19743 : i64} = squot64(binop_x_19040, nKw_11030)
+--               let {binop_y_19744 : i64} = mul_nw64(nKw_11030, binop_x_19743)
+--               let {gtid_18240 : i64} = sub_nw64(binop_x_19040, binop_y_19744)
+--               let {map_adj_p_18244 : f32} =
+--                 arrO_11035[binop_x_18379, binop_x_18421, binop_x_18508, binop_x_18684]
+--               let {x_18247 : f32} =
+--                 x_r_r_r_r_18177[binop_x_18379, binop_x_18421, binop_x_18508, binop_x_18684, binop_x_19037, binop_x_19743, gtid_18240]
+--               let {binop_y_adj_18250 : f32} = fmul32(map_adj_p_18244, x_18247)
+--               return {returns binop_x_18379, returns binop_x_18421, returns binop_x_19037, returns binop_x_19743, returns gtid_18240, returns binop_y_adj_18250}
+--             }
+--           let {withacc_inter_18233 : acc(acc_cert_p_18091, [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} =
+--             segmap(thread; virtualise; groups=num_groups_18231; groupsize=segmap_group_size_18230)
+--             (gtid_19747 < nAi_11024, gtid_19748 < nBc_11028, gtid_19749 < nAc_11025, gtid_19750 < nKh_11029, gtid_19751 < nKw_11030) (~phys_tid_19746) : {acc(acc_cert_p_18091, [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} {
+--               let {hist_dest_upd_elem_19752 : f32} =
+--                 hist_dest_upd_19745[gtid_19747, gtid_19748, gtid_19749, gtid_19750, gtid_19751]
+--               let {acc_p_upd_19753 : acc(acc_cert_p_18091, [nAi_11024][nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} =
+--                 update_acc(acc_p_18092, {gtid_19747, gtid_19748, gtid_19749, gtid_19750, gtid_19751}, {hist_dest_upd_elem_19752})
+--               return {returns acc_p_upd_19753}
+--             }
+--           in {withacc_inter_18233})
+--       let {hist_dest_19754 : [nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--         replicate([nBc_11028][nAc_11025][nKh_11029][nKw_11030], 0.0f32)
+--       let {hist_dest_upd_19971 : [nBc_11028][nAc_11025][nKh_11029][nKw_11030]f32} =
+--         seghist(thread; virtualise; groups=num_groups_18286; groupsize=segmap_group_size_18285)
+--         (gtid_19758 < nest_size_18284) (~phys_tid_18294)
+--         ([nBc_11028][nAc_11025][nKh_11029][nKw_11030], 1i64,
+--         {hist_dest_19754},
+--         {0.0f32},
+--         ,
+--         \ {x_19755 : f32, y_19756 : f32}
+--           : {f32} ->
+--           let {binlam_res_19757 : f32} = fadd32(x_19755, y_19756)
+--           in {binlam_res_19757})
+--         : {i64, i64, i64, i64, f32} {
+--           let {binop_x_19770 : i64} = squot64(gtid_19758, binop_y_19766)
+--           let {binop_y_19774 : i64} = mul_nw64(binop_y_19766, binop_x_19770)
+--           let {binop_x_19775 : i64} = sub_nw64(gtid_19758, binop_y_19774)
+--           let {binop_x_19798 : i64} = squot64(binop_x_19775, binop_y_18515)
+--           let {binop_y_19801 : i64} = mul_nw64(binop_y_18515, binop_x_19798)
+--           let {binop_x_19802 : i64} = sub_nw64(binop_x_19775, binop_y_19801)
+--           let {binop_x_19855 : i64} = squot64(binop_x_19802, y_18169)
+--           let {binop_y_19857 : i64} = mul_nw64(y_18169, binop_x_19855)
+--           let {binop_x_19858 : i64} = sub_nw64(binop_x_19802, binop_y_19857)
+--           let {binop_x_19969 : i64} = squot64(binop_x_19858, nKw_11030)
+--           let {binop_y_19970 : i64} = mul_nw64(nKw_11030, binop_x_19969)
+--           let {gtid_18293 : i64} = sub_nw64(binop_x_19858, binop_y_19970)
+--           let {withhacc_res_p_p_p_18299 : f32} =
+--             withhacc_res_r_r_18082[binop_x_19770, binop_x_19798, binop_x_19855, binop_x_19969, gtid_18293]
+--           return {returns binop_x_19798, returns binop_x_19855, returns binop_x_19969, returns gtid_18293, returns withhacc_res_p_p_p_18299}
+--         }
+--       let {map_adjs_18288 : acc(acc_cert_p_15417, [nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} =
+--         segmap(thread; virtualise; groups=num_groups_18286; groupsize=segmap_group_size_18285)
+--         (gtid_19973 < nBc_11028, gtid_19974 < nAc_11025, gtid_19975 < nKh_11029, gtid_19976 < nKw_11030) (~phys_tid_19972) : {acc(acc_cert_p_15417, [nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} {
+--           let {hist_dest_upd_elem_19977 : f32} =
+--             hist_dest_upd_19971[gtid_19973, gtid_19974, gtid_19975, gtid_19976]
+--           let {acc_p_upd_19978 : acc(acc_cert_p_15417, [nBc_11028][nAc_11025][nKh_11029][nKw_11030], {f32})} =
+--             update_acc(acc_p_15418, {gtid_19973, gtid_19974, gtid_19975, gtid_19976}, {hist_dest_upd_elem_19977})
+--           return {returns acc_p_upd_19978}
+--         }
+--       in {map_adjs_18288})
+--   in {withhacc_res_16353}
+-- }
 --

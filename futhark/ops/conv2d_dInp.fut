@@ -39,7 +39,8 @@ def dot4
     (arrA: [nN][nC][nH][nW]f32)
     (arrB: [nN][nC][nH][nW]f32)
  : f32
- = reduce (\x y -> x + y) 0 (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
+ = reduce (\x y -> x + y) 0
+    (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
 
 
 def conv2d
@@ -63,15 +64,19 @@ def conv2d_dInp
     (arrK: [nBc][nAc][nKh][nKw]f32)
     (arrO: [nAi][nBc][nBh][nBw]f32)
  : ([nAi][nAc][nAh][nAw]f32)
- = vjp (\(a : [nAi][nAc][nAh][nAw]f32) : [nAi][nBc][nBh][nBw]f32 -> conv2d a arrK) arrA arrO
+ = vjp (\(a : [nAi][nAc][nAh][nAw]f32) : [nAi][nBc][nBh][nBw]f32 -> conv2d a arrK)
+       arrA arrO
 
 
 def main
-     (arrA: [1][4][16][32]f32)
-     (arrK: [4][4][3][3]f32)
-     (arrO: [1][4][16][32]f32)
-  : [1][4][16][32]f32
-  = conv2d_dInp arrA arrK arrO
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : [nAi][nAc][nAh][nAw]f32
+ = conv2d_dInp arrA arrK arrO
 
 
 -- # Trying dev -ad by itself fails in the AD implementation.

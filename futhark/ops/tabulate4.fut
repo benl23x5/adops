@@ -1,9 +1,9 @@
 
-def main : [100][100][100][100]i64
- = tabulate 100 (\i0 ->
-   tabulate 100 (\i1 ->
-   tabulate 100 (\i2 ->
-   tabulate 100 (\i3 -> i0 * i1 * i2 * i3))))
+def main (n: i64) (c: i64) (h: i64) (w: i64): [n][c][h][w]i64
+ = tabulate n (\i0 ->
+   tabulate c (\i1 ->
+   tabulate h (\i2 ->
+   tabulate w (\i3 -> i0 * i1 * i2 * i3))))
 
 
 -- $ futhark dev --gpu tabulate4.fut > dump/tabulate4.txt

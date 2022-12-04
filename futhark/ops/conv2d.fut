@@ -1,5 +1,4 @@
 
-
 def tabulate_4d
     (nN: i64)(nC: i64)(nH: i64)(nW: i64)
     (f: i64 -> i64 -> i64 -> i64 -> f32)
@@ -40,7 +39,8 @@ def dot4
     (arrA: [nN][nC][nH][nW]f32)
     (arrB: [nN][nC][nH][nW]f32)
  : f32
- = reduce (\x y -> x + y) 0 (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
+ = reduce (\x y -> x + y) 0
+    (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
 
 
 def conv2d
@@ -57,9 +57,11 @@ def conv2d
 
 
 def main
-    (arrA: [1][4][16][32]f32)
-    (arrK: [4][4][3][3]f32)
- : [1][4][16][32]f32
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    (arrA: [nAi][nAc][nAh][nAw]f32)
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+ : [nAi][nBc][nAh][nAw]f32
  = conv2d arrA arrK
 
 

@@ -6,6 +6,7 @@ def softmax [n] (elts: [n]f32): [n]f32
    let den = f32.sum (map (\x -> f32.exp (x - mx)) elts)
    in  map (\x -> f32.exp (x - mx) / den) elts
 
+
 def regression
     [nImgs][nChas][nRows][nCols]
     (arr: [nImgs][nChas][nRows][nCols]f32)
@@ -17,7 +18,10 @@ def regression
           in  f32.sum (map2 (\xK xV -> xK * xV) aKs (softmax aNeg)))
 
 
-def main (arrA: [1][8][16][32]f32): [1][16][32]f32
+def main
+    [nImgs][nChas][nRows][nCols]
+    (arrA: [nImgs][nChas][nRows][nCols]f32)
+ :  [nImgs][nRows][nCols]f32
  = regression arrA
 
 
@@ -26,96 +30,111 @@ def main (arrA: [1][8][16][32]f32): [1][16][32]f32
 -- entry("main",
 --       {arrA: [][][][]f32},
 --       {[][][]f32})
---   entry_main (arrA_7738 : [1i64][8i64][16i64][32i64]f32)
---   : {[1i64][16i64][32i64]f32} = {
---   let {iota_res_8960 : [8i64]i64} =
---     iota64(8i64, 0i64, 1i64)
---   let {defunc_1_map_res_9089 : [8i64]f32} =
---     map(8i64,
---         {iota_res_8960},
---         \ {x_8965 : i64}
+--   entry_main (nImgs_7746 : i64,
+--               nChas_7747 : i64,
+--               nRows_7748 : i64,
+--               nCols_7749 : i64,
+--               arrA_7750 : [nImgs_7746][nChas_7747][nRows_7748][nCols_7749]f32)
+--   : {[nImgs_7746][nRows_7748][nCols_7749]f32} = {
+--   let {iota_res_8976 : [nChas_7747]i64} =
+--     iota64(nChas_7747, 0i64, 1i64)
+--   let {defunc_1_map_res_9110 : [nChas_7747]f32} =
+--     map(nChas_7747,
+--         {iota_res_8976},
+--         \ {x_8981 : i64}
 --           : {f32} ->
---           let {i64_res_8966 : f32} = sitofp i64 x_8965 to f32
---           in {i64_res_8966})
---   let {iota_res_8977 : [16i64]i64} =
---     iota64(16i64, 0i64, 1i64)
---   let {iota_res_8981 : [32i64]i64} =
---     iota64(32i64, 0i64, 1i64)
---   let {defunc_2_map_res_9090 : [16i64][32i64]f32} =
---     map(16i64,
---         {iota_res_8977},
---         \ {x_8989 : i64}
---           : {[32i64]f32} ->
---           let {x_8990 : bool} = sle64(0i64, x_8989)
---           let {y_8991 : bool} = slt64(x_8989, 16i64)
---           let {bounds_check_8992 : bool} = logand(x_8990, y_8991)
---           let {defunc_1_map_res_9088 : [32i64]f32} =
---             map(32i64,
---                 {iota_res_8981},
---                 \ {x_8994 : i64}
---                   : {f32} ->
---                   let {x_8995 : bool} = sle64(0i64, x_8994)
---                   let {y_8996 : bool} = slt64(x_8994, 32i64)
---                   let {bounds_check_8997 : bool} = logand(x_8995, y_8996)
---                   let {y_8999 : bool} = logand(bounds_check_8992, bounds_check_8997)
---                   let {defunc_2_reduce_res_9084 : f32,
---                        defunc_1_map_res_9085 : [8i64]f32} =
---                     redomap(8i64,
---                             {iota_res_8960},
---                             {\ {x_9010 : f32, x_9011 : f32}
---                               : {f32} ->
---                               let {defunc_1_op_res_9012 : f32} = fmax32(x_9010, x_9011)
---                               in {defunc_1_op_res_9012},
---                             {-f32.inf}},
---                             \ {x_9066 : i64}
---                               : {f32,
---                                  f32} ->
---                               let {x_9067 : bool} = sle64(0i64, x_9066)
---                               let {y_9068 : bool} = slt64(x_9066, 8i64)
---                               let {bounds_check_9069 : bool} = logand(x_9067, y_9068)
---                               let {index_ok_9070 : bool} = logand(y_8999, bounds_check_9069)
---                               let {index_certs_9071 : unit} =
---                                 assert(index_ok_9070, {"Index [", 0i64 : i64, ", ", x_9066 : i64, ", ", x_8989 : i64, ", ", x_8994 : i64, "] out of bounds for array of shape [", 1i64 : i64, "][", 8i64 : i64, "][", 16i64 : i64, "][", 32i64 : i64, "]."}, "regression.fut:16:51-77")
---                               let {arg_9072 : f32} =
---                                 #{index_certs_9071}
---                                 arrA_7738[0i64, x_9066, x_8989, x_8994]
---                               let {defunc_0_f_res_9073 : f32} = fsub32(0.0f32, arg_9072)
---                               in {defunc_0_f_res_9073, defunc_0_f_res_9073})
---                   let {defunc_2_reduce_res_9086 : f32} =
---                     redomap(8i64,
---                             {defunc_1_map_res_9085},
---                             {\ {x_9019 : f32, x_9020 : f32}
---                               : {f32} ->
---                               let {defunc_1_op_res_9021 : f32} = fadd32(x_9019, x_9020)
---                               in {defunc_1_op_res_9021},
---                             {0.0f32}},
---                             \ {x_9061 : f32}
---                               : {f32} ->
---                               let {exp_arg_9062 : f32} = fsub32(x_9061, defunc_2_reduce_res_9084)
---                               let {exp_res_9063 : f32} =
---                                 apply exp32(exp_arg_9062)
---                                 : {f32}
---                               in {exp_res_9063})
---                   let {defunc_2_reduce_res_9087 : f32} =
---                     redomap(8i64,
---                             {defunc_1_map_res_9085, defunc_1_map_res_9089},
---                             {\ {x_9033 : f32, x_9034 : f32}
---                               : {f32} ->
---                               let {defunc_1_op_res_9035 : f32} = fadd32(x_9033, x_9034)
---                               in {defunc_1_op_res_9035},
---                             {0.0f32}},
---                             \ {x_9052 : f32, x_9053 : f32}
---                               : {f32} ->
---                               let {exp_arg_9054 : f32} = fsub32(x_9052, defunc_2_reduce_res_9084)
---                               let {exp_res_9055 : f32} =
---                                 apply exp32(exp_arg_9054)
---                                 : {f32}
---                               let {defunc_0_f_res_9056 : f32} = fdiv32(exp_res_9055, defunc_2_reduce_res_9086)
---                               let {defunc_1_f_res_9058 : f32} = fmul32(x_9053, defunc_0_f_res_9056)
---                               in {defunc_1_f_res_9058})
---                   in {defunc_2_reduce_res_9087})
---           in {defunc_1_map_res_9088})
---   let {defunc_3_map_res_8983 : [1i64][16i64][32i64]f32} =
---     replicate([1i64], defunc_2_map_res_9090)
---   in {defunc_3_map_res_8983}
+--           let {i64_res_8982 : f32} = sitofp i64 x_8981 to f32
+--           in {i64_res_8982})
+--   let {iota_res_8989 : [nImgs_7746]i64} =
+--     iota64(nImgs_7746, 0i64, 1i64)
+--   let {iota_res_8993 : [nRows_7748]i64} =
+--     iota64(nRows_7748, 0i64, 1i64)
+--   let {iota_res_8997 : [nCols_7749]i64} =
+--     iota64(nCols_7749, 0i64, 1i64)
+--   let {defunc_3_map_res_9111 : [nImgs_7746][nRows_7748][nCols_7749]f32} =
+--     map(nImgs_7746,
+--         {iota_res_8989},
+--         \ {x_9000 : i64}
+--           : {[nRows_7748][nCols_7749]f32} ->
+--           let {x_9001 : bool} = sle64(0i64, x_9000)
+--           let {y_9002 : bool} = slt64(x_9000, nImgs_7746)
+--           let {bounds_check_9003 : bool} = logand(x_9001, y_9002)
+--           let {defunc_2_map_res_9109 : [nRows_7748][nCols_7749]f32} =
+--             map(nRows_7748,
+--                 {iota_res_8993},
+--                 \ {x_9005 : i64}
+--                   : {[nCols_7749]f32} ->
+--                   let {x_9006 : bool} = sle64(0i64, x_9005)
+--                   let {y_9007 : bool} = slt64(x_9005, nRows_7748)
+--                   let {bounds_check_9008 : bool} = logand(x_9006, y_9007)
+--                   let {defunc_1_map_res_9108 : [nCols_7749]f32} =
+--                     map(nCols_7749,
+--                         {iota_res_8997},
+--                         \ {x_9010 : i64}
+--                           : {f32} ->
+--                           let {x_9011 : bool} = sle64(0i64, x_9010)
+--                           let {y_9012 : bool} = slt64(x_9010, nCols_7749)
+--                           let {bounds_check_9013 : bool} = logand(x_9011, y_9012)
+--                           let {y_9014 : bool} = logand(bounds_check_9003, bounds_check_9013)
+--                           let {y_9015 : bool} = logand(bounds_check_9008, y_9014)
+--                           let {defunc_2_reduce_res_9104 : f32,
+--                                defunc_1_map_res_9105 : [nChas_7747]f32} =
+--                             redomap(nChas_7747,
+--                                     {iota_res_8976},
+--                                     {\ {x_9026 : f32, x_9027 : f32}
+--                                       : {f32} ->
+--                                       let {defunc_1_op_res_9028 : f32} = fmax32(x_9026, x_9027)
+--                                       in {defunc_1_op_res_9028},
+--                                     {-f32.inf}},
+--                                     \ {x_9080 : i64}
+--                                       : {f32,
+--                                          f32} ->
+--                                       let {x_9081 : bool} = sle64(0i64, x_9080)
+--                                       let {y_9082 : bool} = slt64(x_9080, nChas_7747)
+--                                       let {bounds_check_9083 : bool} = logand(x_9081, y_9082)
+--                                       let {index_ok_9084 : bool} = logand(y_9015, bounds_check_9083)
+--                                       let {index_certs_9085 : unit} =
+--                                         assert(index_ok_9084, {"Index [", x_9000 : i64, ", ", x_9080 : i64, ", ", x_9005 : i64, ", ", x_9010 : i64, "] out of bounds for array of shape [", nImgs_7746 : i64, "][", nChas_7747 : i64, "][", nRows_7748 : i64, "][", nCols_7749 : i64, "]."}, "regression.fut:17:51-77")
+--                                       let {arg_9086 : f32} =
+--                                         #{index_certs_9085}
+--                                         arrA_7750[x_9000, x_9080, x_9005, x_9010]
+--                                       let {defunc_0_f_res_9087 : f32} = fsub32(0.0f32, arg_9086)
+--                                       in {defunc_0_f_res_9087, defunc_0_f_res_9087})
+--                           let {defunc_2_reduce_res_9106 : f32} =
+--                             redomap(nChas_7747,
+--                                     {defunc_1_map_res_9105},
+--                                     {\ {x_9035 : f32, x_9036 : f32}
+--                                       : {f32} ->
+--                                       let {defunc_1_op_res_9037 : f32} = fadd32(x_9035, x_9036)
+--                                       in {defunc_1_op_res_9037},
+--                                     {0.0f32}},
+--                                     \ {x_9075 : f32}
+--                                       : {f32} ->
+--                                       let {exp_arg_9076 : f32} = fsub32(x_9075, defunc_2_reduce_res_9104)
+--                                       let {exp_res_9077 : f32} =
+--                                         apply exp32(exp_arg_9076)
+--                                         : {f32}
+--                                       in {exp_res_9077})
+--                           let {defunc_2_reduce_res_9107 : f32} =
+--                             redomap(nChas_7747,
+--                                     {defunc_1_map_res_9105, defunc_1_map_res_9110},
+--                                     {\ {x_9049 : f32, x_9050 : f32}
+--                                       : {f32} ->
+--                                       let {defunc_1_op_res_9051 : f32} = fadd32(x_9049, x_9050)
+--                                       in {defunc_1_op_res_9051},
+--                                     {0.0f32}},
+--                                     \ {x_9066 : f32, x_9067 : f32}
+--                                       : {f32} ->
+--                                       let {exp_arg_9068 : f32} = fsub32(x_9066, defunc_2_reduce_res_9104)
+--                                       let {exp_res_9069 : f32} =
+--                                         apply exp32(exp_arg_9068)
+--                                         : {f32}
+--                                       let {defunc_0_f_res_9070 : f32} = fdiv32(exp_res_9069, defunc_2_reduce_res_9106)
+--                                       let {defunc_1_f_res_9072 : f32} = fmul32(x_9067, defunc_0_f_res_9070)
+--                                       in {defunc_1_f_res_9072})
+--                           in {defunc_2_reduce_res_9107})
+--                   in {defunc_1_map_res_9108})
+--           in {defunc_2_map_res_9109})
+--   in {defunc_3_map_res_9111}
 -- }
+--
