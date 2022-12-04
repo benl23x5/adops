@@ -1,6 +1,7 @@
 // Futhark Benchmark Wrapper.
-// Given a futhark program compiled as a library, run the given entry point
-// with inputs specified in the companion csv.
+// Given a futhark program compiled as a library, run the given entry point.
+// make && ./conv2d_dKrn_bench "ad"   > conv2d_dKrn_ad.csv
+// make && ./conv2d_dKrn_bench "impl" > conv2d_dKrn_impl.csv
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,9 @@ index4_t sizes_conv2d_dKrn_arrA[] =
  , {   4,   4,  128,  512}
  , {   4,   4,  128,  512}
  , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
+ , {   4,   4,  128,  512}
  , {   0,   0,    0,    0} };
 
 index4_t sizes_conv2d_dKrn_arrK[] =
@@ -30,6 +34,9 @@ index4_t sizes_conv2d_dKrn_arrK[] =
  , {  32,   4,    3,    3}
  , {  64,   4,    3,    3}
  , { 128,   4,    3,    3}
+ , { 256,   4,    3,    3}
+ , { 512,   4,    3,    3}
+ , {1024,   4,    3,    3}
  , {   0,   0,    0,    0} };
 
 index4_t sizes_conv2d_dKrn_arrO[] =
@@ -39,6 +46,9 @@ index4_t sizes_conv2d_dKrn_arrO[] =
  , {   4,  32,  128,  512}
  , {   4,  64,  128,  512}
  , {   4, 128,  128,  512}
+ , {   4, 256,  128,  512}
+ , {   4, 512,  128,  512}
+ , {   4,1024,  128,  512}
  , {   0,   0,    0,    0} };
 
 
