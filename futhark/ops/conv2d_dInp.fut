@@ -60,6 +60,16 @@ def conv2d
         in  dot4 arrAt arrKt)
 
 
+def indexz4
+    [nN][nC][nH][nW]
+    (iN: i64) (iC: i64) (iH: i64) (iW: i64)
+    (a: [nN][nC][nH][nW]f32)
+  :  f32
+  = if   iN < nN && iC < nC && iH < nH && iW < nW
+    then a[iN, iC, iH, iW]
+    else 0
+
+
 def conv2d_dInp
     [nAi][nAc][nAh][nAw]
     [nBc][nKh][nKw]
@@ -79,13 +89,15 @@ def conv2d_dInp_impl
     (arrK: [nBc][nAc][nKh][nKw]f32)
     (arrO: [nAi][nBc][nBh][nBw]f32)
  : ([nAi][nAc][nAh][nAw]f32)
- = tabulate_4d nAi nAc nAh nAw (\iImg iCinp iAh iAw ->
-    sum (tabulate nBc (\iCout ->
-      let padh  = nKh / 2
-      let padw  = nKw / 2
-      let arrOt = slice4 1 1 nBh nBw arrO (iImg, iCout, iAh - nKh + padh, iAw - nKw + padw)
-      let arrKt = slice4 1 1 nBh nBw arrK (   0, iCinp, 0, 0)
-      in  dot4 arrOt arrKt)))
+  = let padh = nKh / 2
+    let padw = nKw / 2
+    in  tabulate_4d nAi nAc nAh nAw (\iImg iCinp iAh iAw ->
+        sum (flatten_3d (tabulate_3d nBc nBh nBw (\iCout iBh iBw ->
+          let iKh  = iAh - iBh + padh
+          let iKw  = iAw - iBw + padw
+          let xOut = arrO[iImg,  iCout, iBh, iBw]
+          let xKrn = indexz4 iCout iCinp iKh iKw arrK
+          in  xOut * xKrn))))
 
 -- ------------------------------------------------------------------------------------------------
 

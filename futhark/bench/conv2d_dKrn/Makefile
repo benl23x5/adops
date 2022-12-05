@@ -1,4 +1,12 @@
 CFLAGS=-std=c99 -O3 -lm
+
+OS=$(shell uname -s)
+ifeq ($(OS),Darwin)
+OPENCL_LDFLAGS?=-framework OpenCL
+else
+OPENCL_LDFLAGS?=-lOpenCL
+endif
+
 NAME=conv2d_dKrn
 
 .PHONY: clean run
@@ -28,7 +36,9 @@ $(NAME)_bench_cl: $(NAME)_bench.c $(NAME)_cl.c $(NAME)_cl.h
 	gcc \
 		-DOPENCL=1 \
 		$(NAME)_bench.c $(NAME)_cl.c \
-		-o $(NAME)_bench_cl $(CFLAGS)
+		-o $(NAME)_bench_cl \
+		$(CFLAGS) \
+		$(OPENCL_LDFLAGS)
 
 clean:
 	rm -f\

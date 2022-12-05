@@ -122,8 +122,8 @@ int main(int argc, char** argv) {
     } else if (!strcmp(entry, "impl")) {
       err = futhark_entry_conv2d_dKrn_impl_flat(
         ctx, &dK,
+        arrK_size.row, arrK_size.col,
         (const struct futhark_f32_4d*)arrA,
-        (const struct futhark_f32_4d*)arrK,
         (const struct futhark_f32_4d*)arrO);
     }
 

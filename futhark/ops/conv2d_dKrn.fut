@@ -136,10 +136,9 @@ def conv2d_dKrn_flat
 
 def conv2d_dKrn_impl_flat
     [nAi][nAc][nAh][nAw]
-    [nBc][nKh][nKw]
-    [nBh][nBw]
+    [nBc][nBh][nBw]
+    (nKh: i64) (nKw: i64)
     (arrA: [nAi][nAc][nAh][nAw]f32)
-    (arrK: [nBc][nAc][nKh][nKw]f32)
     (arrO: [nAi][nBc][nBh][nBw]f32)
  : []f32
  = let dK: [nBc][nAc][nKh][nKw]f32 = conv2d_dKrn_impl arrA arrO
