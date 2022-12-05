@@ -43,6 +43,10 @@ def dot4
     (flatten_4d (mmap4 (\x y -> x * y) arrA arrB))
 
 
+def sum(xs: []f32): f32
+ = reduce (+) 0 xs
+
+
 def conv2d
     [nAi][nAc][nAh][nAw]
     [nBc][nKh][nKw]
@@ -67,6 +71,53 @@ def conv2d_dInp
  = vjp (\(a : [nAi][nAc][nAh][nAw]f32) : [nAi][nBc][nBh][nBw]f32 -> conv2d a arrK)
        arrA arrO
 
+
+def conv2d_dInp_impl
+    [nAi][nAc][nAh][nAw]
+    [nBc][nKh][nKw]
+    [nBh][nBw]
+    (arrK: [nBc][nAc][nKh][nKw]f32)
+    (arrO: [nAi][nBc][nBh][nBw]f32)
+ : ([nAi][nAc][nAh][nAw]f32)
+ = tabulate_4d nAi nAc nAh nAw (\iImg iCinp iAh iAw ->
+    sum (tabulate nBc (\iCout ->
+      let padh  = nKh / 2
+      let padw  = nKw / 2
+      let arrOt = slice4 1 1 nBh nBw arrO (iImg, iCout, iAh - nKh + padh, iAw - nKw + padw)
+      let arrKt = slice4 1 1 nBh nBw arrK (   0, iCinp, 0, 0)
+      in  dot4 arrOt arrKt)))
+
+-- ------------------------------------------------------------------------------------------------
+
+def fill4
+    [n][c][h][w]
+    (value: f32)
+  : [n][c][h][w]f32
+  = unflatten_4d n c h w (replicate (n * c * h * w) (value : f32))
+
+def nImg_1  : i64 = 1
+def nCinp_1 : i64 = 2
+def nAh_1   : i64 = 32
+def nAw_1   : i64 = 32
+def nCout_1 : i64 = 4
+def nKh_1   : i64 = 3
+def nKw_1   : i64 = 3
+
+def test_1_ad =
+  let aA : [nImg_1] [nCinp_1][nAh_1][nAw_1]f32 = fill4 0.5
+  let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
+  let aK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = fill4 0.1
+  let dI = conv2d_dInp aA aK aO
+  in  dI
+
+def test_1_impl =
+  let aK : [nCout_1][nCinp_1][nKh_1][nKw_1]f32 = fill4 0.1
+  let aO : [nImg_1] [nCout_1][nAh_1][nAw_1]f32 = fill4   1
+  let dI : [nImg_1] [nCinp_1][nAh_1][nAw_1]f32 = conv2d_dInp_impl aK aO
+  in  dI
+
+def test1 =
+  test_1_ad == test_1_impl
 
 def main
     [nAi][nAc][nAh][nAw]

@@ -10,7 +10,12 @@
 #include <sys/time.h>
 
 #include "../index4.h"
+
+#ifdef OPENCL
+#include "conv2d_dKrn_cl.h"
+#else
 #include "conv2d_dKrn.h"
+#endif
 
 #define millisecs_elapsed(s,e) \
   (((e.tv_sec - s.tv_sec) * 1000.0) + ((e.tv_usec - s.tv_usec) / 1000.0))
@@ -58,6 +63,10 @@ int main(int argc, char** argv) {
     char* entry = argv[1];
 
     struct futhark_context_config *cfg = futhark_context_config_new();
+#ifdef OPENCL
+  if (getenv("OPENCL_DEVICE") != NULL)
+    futhark_context_config_set_device(cfg, getenv("OPENCL_DEVICE"));
+#endif
     struct futhark_context        *ctx = futhark_context_new(cfg);
 
     index4_t                arrA_size,  arrK_size,  arrO_size;
